@@ -12,7 +12,8 @@ import {
   Filter, 
   BarChart2,
   Share2,
-  FileText
+  FileText,
+  RotateCcw
 } from 'lucide-react';
 import { supabase, APP_CONFIG } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
@@ -88,8 +89,11 @@ export const StudentDashboard: React.FC = () => {
   }
 
   // Calculate statistics
-  const totalAvailableExams = exams.length;
-  const attemptedExamIds = new Set(attempts.map((a) => a.exam_id));
+  const submittedCountPerExam: Record<string, number> = {};
+  attempts.filter((a) => a.status === 'submitted').forEach((a) => {
+    submittedCountPerExam[a.exam_id] = (submittedCountPerExam[a.exam_id] || 0) + 1;
+  });
+
   const completedAttempts = attempts.filter((a) => a.status === 'submitted');
   const totalCompleted = completedAttempts.length;
 
@@ -107,7 +111,14 @@ export const StudentDashboard: React.FC = () => {
     return true;
   });
 
-  const availableExams = filteredExams.filter((exam) => !attemptedExamIds.has(exam.id) && exam.status === 'published');
+  // Available if published and attempts made is less than allowed max_attempts
+  const availableExams = filteredExams.filter((exam) => {
+    if (exam.status !== 'published') return false;
+    const count = submittedCountPerExam[exam.id] || 0;
+    const allowed = exam.max_attempts || 1;
+    return count < allowed;
+  });
+
   const userCompletedResults = results.filter((res) => {
     if (selectedSubject !== 'all' && res.exam?.subject_id !== selectedSubject) {
       return false;
@@ -292,56 +303,72 @@ export const StudentDashboard: React.FC = () => {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {availableExams.map((exam) => (
-                <div
-                  key={exam.id}
-                  className="rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 flex flex-col justify-between shadow-sm hover:shadow-md hover:border-brand-300 dark:hover:border-brand-700 transition-all"
-                >
-                  <div>
-                    <div className="flex items-center justify-between gap-2 mb-3">
-                      <span className="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-brand-50 dark:bg-brand-950/60 text-brand-600 dark:text-brand-400 border border-brand-200/50">
-                        {exam.subject?.name || 'General'}
-                      </span>
-                      <span className="text-[11px] font-semibold text-emerald-600 bg-emerald-50 dark:bg-emerald-950 px-2 py-0.5 rounded-full">
-                        Active
-                      </span>
+              {availableExams.map((exam) => {
+                const attemptsDone = submittedCountPerExam[exam.id] || 0;
+                const isReattempt = attemptsDone > 0;
+
+                return (
+                  <div
+                    key={exam.id}
+                    className="rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 flex flex-col justify-between shadow-sm hover:shadow-md hover:border-brand-300 dark:hover:border-brand-700 transition-all"
+                  >
+                    <div>
+                      <div className="flex items-center justify-between gap-2 mb-3">
+                        <span className="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-brand-50 dark:bg-brand-950/60 text-brand-600 dark:text-brand-400 border border-brand-200/50">
+                          {exam.subject?.name || 'General'}
+                        </span>
+                        {isReattempt ? (
+                          <span className="text-[10px] font-extrabold text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-950 px-2.5 py-0.5 rounded-full border border-indigo-200 dark:border-indigo-800">
+                            Reattempt ({attemptsDone}/{exam.max_attempts >= 100 ? '∞' : exam.max_attempts})
+                          </span>
+                        ) : (
+                          <span className="text-[11px] font-semibold text-emerald-600 bg-emerald-50 dark:bg-emerald-950 px-2 py-0.5 rounded-full">
+                            {exam.max_attempts === 1 ? '1 Attempt Only' : 'Reattempts Allowed'}
+                          </span>
+                        )}
+                      </div>
+
+                      <h3 className="text-base font-bold text-slate-900 dark:text-white line-clamp-2">
+                        {exam.title}
+                      </h3>
+
+                      {exam.topic && (
+                        <p className="text-xs text-slate-500 mt-1">Topic: {exam.topic}</p>
+                      )}
+
+                      <p className="text-xs text-slate-600 dark:text-slate-400 mt-2 line-clamp-2 leading-relaxed">
+                        {exam.description || 'Comprehensive test evaluating subject comprehension.'}
+                      </p>
+
+                      <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 grid grid-cols-2 gap-2 text-xs text-slate-500">
+                        <div className="flex items-center gap-1.5">
+                          <Clock className="h-3.5 w-3.5 text-slate-400" />
+                          <span>{Math.round(exam.duration_seconds / 60)} Mins</span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <Award className="h-3.5 w-3.5 text-slate-400" />
+                          <span>{exam.total_marks} Marks</span>
+                        </div>
+                      </div>
                     </div>
 
-                    <h3 className="text-base font-bold text-slate-900 dark:text-white line-clamp-2">
-                      {exam.title}
-                    </h3>
-
-                    {exam.topic && (
-                      <p className="text-xs text-slate-500 mt-1">Topic: {exam.topic}</p>
-                    )}
-
-                    <p className="text-xs text-slate-600 dark:text-slate-400 mt-2 line-clamp-2 leading-relaxed">
-                      {exam.description || 'Comprehensive test evaluating subject comprehension.'}
-                    </p>
-
-                    <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 grid grid-cols-2 gap-2 text-xs text-slate-500">
-                      <div className="flex items-center gap-1.5">
-                        <Clock className="h-3.5 w-3.5 text-slate-400" />
-                        <span>{Math.round(exam.duration_seconds / 60)} Mins</span>
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        <Award className="h-3.5 w-3.5 text-slate-400" />
-                        <span>{exam.total_marks} Marks</span>
-                      </div>
+                    <div className="mt-6">
+                      <Link
+                        to={`/exam/${exam.id}/instructions`}
+                        className={`w-full inline-flex items-center justify-center gap-2 rounded-xl py-2.5 text-xs font-bold text-white shadow-sm transition-all ${
+                          isReattempt
+                            ? 'bg-indigo-600 hover:bg-indigo-700'
+                            : 'bg-brand-600 hover:bg-brand-700'
+                        }`}
+                      >
+                        {isReattempt && <RotateCcw className="h-3.5 w-3.5" />}
+                        <span>{isReattempt ? `Reattempt Quiz (Attempt ${attemptsDone + 1})` : 'Start Examination'}</span>
+                        <ArrowRight className="h-3.5 w-3.5" />
+                      </Link>
                     </div>
                   </div>
-
-                  <div className="mt-6">
-                    <Link
-                      to={`/exam/${exam.id}/instructions`}
-                      className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-brand-600 py-2.5 text-xs font-bold text-white shadow-sm hover:bg-brand-700 transition-all"
-                    >
-                      <span>Start Examination</span>
-                      <ArrowRight className="h-3.5 w-3.5" />
-                    </Link>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
@@ -420,6 +447,17 @@ export const StudentDashboard: React.FC = () => {
                         </Link>
                       )}
 
+                      {((submittedCountPerExam[result.exam_id] || 0) < (exam?.max_attempts || 1)) && (
+                        <Link
+                          to={`/exam/${result.exam_id}/instructions`}
+                          className="rounded-xl border border-indigo-200 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-950/60 px-3.5 py-2 text-xs font-bold text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 flex items-center gap-1.5"
+                          title="Reattempt this quiz"
+                        >
+                          <RotateCcw className="h-3.5 w-3.5" />
+                          <span>Reattempt</span>
+                        </Link>
+                      )}
+
                       <a
                         href={getWhatsAppShareUrl(result)}
                         target="_blank"
@@ -442,7 +480,11 @@ export const StudentDashboard: React.FC = () => {
       {activeTab === 'all' && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredExams.map((exam) => {
-            const hasAttempted = attemptedExamIds.has(exam.id);
+            const count = submittedCountPerExam[exam.id] || 0;
+            const allowed = exam.max_attempts || 1;
+            const canAttempt = count < allowed;
+            const isReattempt = count > 0 && canAttempt;
+
             return (
               <div
                 key={exam.id}
@@ -454,9 +496,17 @@ export const StudentDashboard: React.FC = () => {
                       {exam.subject?.name || 'Class ' + exam.class}
                     </span>
                     <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${
-                      hasAttempted ? 'bg-slate-100 text-slate-600' : 'bg-emerald-50 text-emerald-600'
+                      !canAttempt 
+                        ? 'bg-slate-100 text-slate-600 dark:bg-slate-800' 
+                        : isReattempt 
+                        ? 'bg-indigo-50 text-indigo-700 dark:bg-indigo-950' 
+                        : 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950'
                     }`}>
-                      {hasAttempted ? 'Attempted' : 'Available'}
+                      {!canAttempt 
+                        ? 'Attempt Limit Reached' 
+                        : isReattempt 
+                        ? `Reattempt (${count}/${allowed >= 100 ? '∞' : allowed})` 
+                        : 'Available'}
                     </span>
                   </div>
                   <h3 className="text-base font-bold text-slate-900 dark:text-white">{exam.title}</h3>
@@ -464,16 +514,19 @@ export const StudentDashboard: React.FC = () => {
                 </div>
 
                 <div className="mt-6 pt-4 border-t border-slate-100 dark:border-slate-800">
-                  {hasAttempted ? (
+                  {!canAttempt ? (
                     <span className="block text-center text-xs font-semibold text-slate-400 py-1">
-                      Already Submitted
+                      Submitted ({count}/{allowed} Attempts Used)
                     </span>
                   ) : (
                     <Link
                       to={`/exam/${exam.id}/instructions`}
-                      className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-brand-600 py-2.5 text-xs font-bold text-white hover:bg-brand-700 transition-all"
+                      className={`w-full inline-flex items-center justify-center gap-2 rounded-xl py-2.5 text-xs font-bold text-white transition-all ${
+                        isReattempt ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-brand-600 hover:bg-brand-700'
+                      }`}
                     >
-                      <span>Take Examination</span>
+                      {isReattempt && <RotateCcw className="h-3.5 w-3.5" />}
+                      <span>{isReattempt ? `Reattempt Quiz (Attempt ${count + 1})` : 'Take Examination'}</span>
                       <ArrowRight className="h-3.5 w-3.5" />
                     </Link>
                   )}

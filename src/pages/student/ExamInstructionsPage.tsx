@@ -229,6 +229,12 @@ export const ExamInstructionsPage: React.FC = () => {
             <div className="flex items-start gap-2">
               <span className="text-brand-500 font-bold">•</span>
               <span>
+                <strong>Attempt Policy:</strong> {exam.max_attempts === 1 ? '1 Attempt Only. Once submitted, you cannot reattempt this examination.' : exam.max_attempts >= 100 ? 'Unlimited Practice Reattempts Allowed.' : `Reattempts Allowed: Up to ${exam.max_attempts} total attempts permitted.`}
+              </span>
+            </div>
+            <div className="flex items-start gap-2">
+              <span className="text-brand-500 font-bold">•</span>
+              <span>
                 <strong>Navigation Mode:</strong> {exam.navigation_mode === 'next_only' ? 'Next-Only mode is enabled. Once you submit an answer and move forward, previous questions cannot be revisited.' : 'Previous + Next mode is enabled. You can freely revisit questions using the palette.'}
               </span>
             </div>

@@ -185,7 +185,7 @@ export const AdminExamsPage: React.FC = () => {
                             {exam.title}
                           </span>
                           <span className="text-[11px] text-slate-400">
-                            {qCount} Questions • Timer: {exam.timer_mode}
+                            {qCount} Questions • Timer: {exam.timer_mode} • {exam.max_attempts === 1 ? '1 Attempt Only' : exam.max_attempts >= 100 ? 'Unlimited Reattempts' : `${exam.max_attempts} Attempts`}
                           </span>
                         </td>
                         <td className="p-4">
