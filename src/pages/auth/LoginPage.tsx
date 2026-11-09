@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { GraduationCap, Mail, Lock, ArrowRight, AlertCircle, ShieldCheck, Sparkles } from 'lucide-react';
+import { GraduationCap, Mail, Lock, ArrowRight, AlertCircle } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { APP_CONFIG } from '../../lib/supabase';
 
@@ -21,7 +21,7 @@ export const LoginPage: React.FC = () => {
     setErrorMsg(null);
     setLoading(true);
 
-    const { error } = await login(email, password);
+    const { error } = await login(email.trim().toLowerCase(), password);
     setLoading(false);
 
     if (error) {
@@ -33,12 +33,6 @@ export const LoginPage: React.FC = () => {
         navigate(from || '/dashboard');
       }
     }
-  };
-
-  const handleFillTeacherCredentials = () => {
-    setEmail('gitwala.vinay@gmail.com');
-    setPassword('karvin123');
-    setErrorMsg(null);
   };
 
   return (
@@ -55,29 +49,6 @@ export const LoginPage: React.FC = () => {
           <p className="mt-1 text-xs text-slate-500">
             Powered by {APP_CONFIG.creator} • Examination Portal
           </p>
-        </div>
-
-        {/* Pre-Configured Teacher Login Card */}
-        <div className="mb-6 rounded-2xl border border-purple-200 dark:border-purple-900/60 bg-purple-50/70 dark:bg-purple-950/40 p-4">
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center gap-1.5 text-xs font-bold text-purple-900 dark:text-purple-300">
-              <ShieldCheck className="h-4 w-4 text-purple-600" />
-              <span>Teacher / Admin Pre-configured</span>
-            </div>
-            <button
-              type="button"
-              onClick={handleFillTeacherCredentials}
-              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-purple-600 hover:bg-purple-700 text-white text-[11px] font-bold shadow-sm transition-all"
-            >
-              <Sparkles className="h-3 w-3" />
-              <span>Auto-Fill</span>
-            </button>
-          </div>
-          <div className="text-[11px] font-mono text-purple-800 dark:text-purple-300 space-y-0.5">
-            <p><strong>Email:</strong> gitwala.vinay@gmail.com</p>
-            <p><strong>Phone:</strong> 8081788927</p>
-            <p><strong>Password:</strong> karvin123</p>
-          </div>
         </div>
 
         {errorMsg && (
@@ -97,7 +68,7 @@ export const LoginPage: React.FC = () => {
               <input
                 type="email"
                 required
-                placeholder="gitwala.vinay@gmail.com or student@example.com"
+                placeholder="name@example.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 pl-10 pr-3.5 py-2.5 text-sm focus:border-brand-500 focus:outline-none dark:text-white"
