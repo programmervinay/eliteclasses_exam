@@ -11,7 +11,8 @@ import {
   Clock, 
   TrendingUp, 
   GraduationCap,
-  ArrowRight
+  ArrowRight,
+  Radio
 } from 'lucide-react';
 import { supabase, APP_CONFIG } from '../../lib/supabase';
 import { StatCard } from '../../components/admin/StatCard';
@@ -114,10 +115,19 @@ export const AdminDashboard: React.FC = () => {
             </p>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2.5">
+            <Link
+              to="/admin/notifications"
+              className="inline-flex items-center gap-2 rounded-2xl bg-indigo-600 px-4 py-2.5 text-xs font-bold text-white shadow-md shadow-indigo-500/25 hover:bg-indigo-700 transition-all"
+              title="Broadcast Web Push Notifications to students"
+            >
+              <Radio className="h-4 w-4 animate-pulse" />
+              <span>Send Notifications</span>
+            </Link>
+
             <button
               onClick={() => setIsExamModalOpen(true)}
-              className="inline-flex items-center gap-2 rounded-2xl bg-brand-600 px-5 py-2.5 text-xs font-bold text-white shadow-md shadow-brand-500/25 hover:bg-brand-700 transition-all"
+              className="inline-flex items-center gap-2 rounded-2xl bg-brand-600 px-4.5 py-2.5 text-xs font-bold text-white shadow-md shadow-brand-500/25 hover:bg-brand-700 transition-all"
             >
               <Plus className="h-4 w-4" />
               <span>Create Examination</span>

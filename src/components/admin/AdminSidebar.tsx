@@ -9,7 +9,8 @@ import {
   ShieldAlert, 
   BarChart3, 
   ArrowLeft,
-  GraduationCap
+  GraduationCap,
+  Radio
 } from 'lucide-react';
 import { APP_CONFIG } from '../../lib/supabase';
 
@@ -24,6 +25,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen = false, onCl
   const navLinks = [
     { name: 'Overview', path: '/admin', icon: LayoutDashboard },
     { name: 'Examinations', path: '/admin/exams', icon: BookOpen },
+    { name: 'Send Notifications', path: '/admin/notifications', icon: Radio },
     { name: 'Question Bank', path: '/admin/questions', icon: HelpCircle },
     { name: 'Student Accounts', path: '/admin/students', icon: Users },
     { name: 'Results & Scores', path: '/admin/results', icon: Award },

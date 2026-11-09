@@ -12,7 +12,8 @@ import {
   LayoutDashboard, 
   BookOpen, 
   BarChart2, 
-  MessageSquare
+  MessageSquare,
+  Radio
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
@@ -79,6 +80,17 @@ export const Navbar: React.FC = () => {
                   >
                     <BookOpen className="h-4 w-4" />
                     Exams
+                  </Link>
+                  <Link
+                    to="/admin/notifications"
+                    className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                      isActive('/admin/notifications')
+                        ? 'bg-brand-50 text-brand-700 dark:bg-brand-950/60 dark:text-brand-300'
+                        : 'text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white'
+                    }`}
+                  >
+                    <Radio className="h-4 w-4 text-indigo-500 animate-pulse" />
+                    Send Notifications
                   </Link>
                   <Link
                     to="/admin/questions"
@@ -244,6 +256,13 @@ export const Navbar: React.FC = () => {
                     className="block px-3 py-2 rounded-md text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800"
                   >
                     Manage Exams
+                  </Link>
+                  <Link
+                    to="/admin/notifications"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="block px-3 py-2 rounded-md text-sm font-medium text-indigo-600 dark:text-indigo-400 hover:bg-slate-100 dark:hover:bg-slate-800 font-bold"
+                  >
+                    📢 Send Notifications
                   </Link>
                   <Link
                     to="/admin/questions"

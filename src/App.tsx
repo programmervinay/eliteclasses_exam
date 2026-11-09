@@ -23,6 +23,7 @@ import { StudentAnalyticsPage } from './pages/student/StudentAnalyticsPage';
 // Admin Pages
 import { AdminDashboard } from './pages/admin/AdminDashboard';
 import { AdminExamsPage } from './pages/admin/AdminExamsPage';
+import { AdminNotificationsPage } from './pages/admin/AdminNotificationsPage';
 import { AdminQuestionsPage } from './pages/admin/AdminQuestionsPage';
 import { AdminStudentsPage } from './pages/admin/AdminStudentsPage';
 import { AdminResultsPage } from './pages/admin/AdminResultsPage';
@@ -120,6 +121,14 @@ export const App: React.FC = () => {
                 element={
                   <ProtectedRoute requireAdmin>
                     <AdminExamsPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/notifications"
+                element={
+                  <ProtectedRoute requireAdmin>
+                    <AdminNotificationsPage />
                   </ProtectedRoute>
                 }
               />
