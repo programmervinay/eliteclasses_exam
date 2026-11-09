@@ -113,18 +113,23 @@ export const LoginPage: React.FC = () => {
         </form>
 
         <div className="mt-6 text-center text-xs text-slate-500">
-          New Student?{' '}
+          Haven't set your password yet?{' '}
           <Link to="/register" className="font-bold text-brand-600 dark:text-brand-400 hover:underline">
-            Register Account
+            Register Here First
           </Link>
         </div>
 
         {/* Teacher login note */}
-        <div className="mt-6 pt-4 border-t border-slate-100 dark:border-slate-800 text-[11px] text-slate-400 text-center">
-          Teacher / Admin:{' '}
-          <span className="font-mono text-slate-600 dark:text-slate-300 font-medium">
-            Sign in with your teacher credentials.
-          </span>
+        <div className="mt-6 pt-4 border-t border-slate-100 dark:border-slate-800 text-[11px] text-slate-400 text-center space-y-1">
+          <p>
+            Teacher / Admin:{' '}
+            <span className="font-semibold text-slate-700 dark:text-slate-300">
+              Sign in with your email & password.
+            </span>
+          </p>
+          <p className="text-[10px] text-slate-400">
+            First time? Use <Link to="/register" className="text-purple-600 font-semibold hover:underline">Teacher Registration</Link> to create your password.
+          </p>
         </div>
 
       </div>

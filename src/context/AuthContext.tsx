@@ -10,6 +10,8 @@ interface RegisterData {
   studentClass: StudentClass;
   schoolName?: string;
   password: string;
+  isTeacher?: boolean;
+  teacherCode?: string;
 }
 
 interface AuthContextType {
@@ -109,6 +111,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const register = async (data: RegisterData) => {
     try {
       const normalizedEmail = data.email.trim().toLowerCase();
+      const isAdminAccount = normalizedEmail === 'gitwala.vinay@gmail.com' || (data.isTeacher && data.teacherCode === 'ELITE2026');
+
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: normalizedEmail,
         password: data.password,
@@ -118,6 +122,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             phone: data.phone.trim(),
             class: data.studentClass,
             school_name: data.schoolName?.trim() || null,
+            teacher_code: data.teacherCode?.trim() || null,
           },
         },
       });
@@ -133,7 +138,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           phone: data.phone.trim(),
           class: data.studentClass,
           school_name: data.schoolName?.trim() || null,
-          role: normalizedEmail === 'gitwala.vinay@gmail.com' ? 'admin' : 'student',
+          role: isAdminAccount ? 'admin' : 'student',
         });
         if (profileError) {
           console.warn('Upsert profile notice:', profileError.message);
