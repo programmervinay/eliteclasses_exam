@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { GraduationCap, Mail, Lock, ArrowRight, AlertCircle } from 'lucide-react';
+import { GraduationCap, Mail, Lock, ArrowRight, AlertCircle, ShieldCheck, Sparkles } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { APP_CONFIG } from '../../lib/supabase';
 
@@ -27,7 +27,6 @@ export const LoginPage: React.FC = () => {
     if (error) {
       setErrorMsg(error.message || 'Invalid email or password. Please try again.');
     } else {
-      // Determine redirection: if admin go to /admin else from
       if (email.trim().toLowerCase() === 'gitwala.vinay@gmail.com') {
         navigate('/admin');
       } else {
@@ -36,20 +35,49 @@ export const LoginPage: React.FC = () => {
     }
   };
 
+  const handleFillTeacherCredentials = () => {
+    setEmail('gitwala.vinay@gmail.com');
+    setPassword('karvin123');
+    setErrorMsg(null);
+  };
+
   return (
-    <div className="flex min-h-[calc(100vh-4rem)] items-center justify-center p-4 bg-slate-50 dark:bg-slate-950">
+    <div className="flex min-h-[calc(100vh-4rem)] items-center justify-center p-4 bg-slate-50 dark:bg-slate-950 py-10">
       <div className="w-full max-w-md rounded-3xl bg-white dark:bg-slate-900 p-8 shadow-xl border border-slate-200/80 dark:border-slate-800">
         
-        <div className="text-center mb-8">
+        <div className="text-center mb-6">
           <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-tr from-brand-600 to-indigo-600 text-white shadow-md shadow-brand-500/25 mb-4">
             <GraduationCap className="h-6 w-6" />
           </div>
           <h2 className="text-2xl font-black text-slate-900 dark:text-white">
-            Welcome to {APP_CONFIG.name}
+            Sign In to {APP_CONFIG.name}
           </h2>
           <p className="mt-1 text-xs text-slate-500">
-            Sign in with your registered email and password
+            Powered by {APP_CONFIG.creator} • Examination Portal
           </p>
+        </div>
+
+        {/* Pre-Configured Teacher Login Card */}
+        <div className="mb-6 rounded-2xl border border-purple-200 dark:border-purple-900/60 bg-purple-50/70 dark:bg-purple-950/40 p-4">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-1.5 text-xs font-bold text-purple-900 dark:text-purple-300">
+              <ShieldCheck className="h-4 w-4 text-purple-600" />
+              <span>Teacher / Admin Pre-configured</span>
+            </div>
+            <button
+              type="button"
+              onClick={handleFillTeacherCredentials}
+              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-purple-600 hover:bg-purple-700 text-white text-[11px] font-bold shadow-sm transition-all"
+            >
+              <Sparkles className="h-3 w-3" />
+              <span>Auto-Fill</span>
+            </button>
+          </div>
+          <div className="text-[11px] font-mono text-purple-800 dark:text-purple-300 space-y-0.5">
+            <p><strong>Email:</strong> gitwala.vinay@gmail.com</p>
+            <p><strong>Phone:</strong> 8081788927</p>
+            <p><strong>Password:</strong> karvin123</p>
+          </div>
         </div>
 
         {errorMsg && (
@@ -69,7 +97,7 @@ export const LoginPage: React.FC = () => {
               <input
                 type="email"
                 required
-                placeholder="student@example.com"
+                placeholder="gitwala.vinay@gmail.com or student@example.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 pl-10 pr-3.5 py-2.5 text-sm focus:border-brand-500 focus:outline-none dark:text-white"
@@ -113,23 +141,10 @@ export const LoginPage: React.FC = () => {
         </form>
 
         <div className="mt-6 text-center text-xs text-slate-500">
-          Haven't set your password yet?{' '}
+          New Student?{' '}
           <Link to="/register" className="font-bold text-brand-600 dark:text-brand-400 hover:underline">
-            Register Here First
+            Register Student Account
           </Link>
-        </div>
-
-        {/* Teacher login note */}
-        <div className="mt-6 pt-4 border-t border-slate-100 dark:border-slate-800 text-[11px] text-slate-400 text-center space-y-1">
-          <p>
-            Teacher / Admin:{' '}
-            <span className="font-semibold text-slate-700 dark:text-slate-300">
-              Sign in with your email & password.
-            </span>
-          </p>
-          <p className="text-[10px] text-slate-400">
-            First time? Use <Link to="/register" className="text-purple-600 font-semibold hover:underline">Teacher Registration</Link> to create your password.
-          </p>
         </div>
 
       </div>
