@@ -85,46 +85,57 @@ export const AdminStudentsPage: React.FC = () => {
         p_student_id: accountToDelete.id,
       });
 
-      if (rpcError) {
-        console.warn('RPC deletion note (executing direct cascade cleanup):', rpcError);
+      if (!rpcError) {
+        setAccountToDelete(null);
+        setConfirmedFraud(false);
+        await fetchStudents();
+        return;
+      }
 
-        // 2. Cascade delete student records
-        const { data: attempts } = await supabase
-          .from('attempts')
-          .select('id')
-          .eq('student_id', accountToDelete.id);
+      console.warn('RPC deletion unavailable, executing cascaded removal & deactivation:', rpcError);
 
-        if (attempts && attempts.length > 0) {
-          const attemptIds = attempts.map((a) => a.id);
-          await supabase.from('attempt_answers').delete().in('attempt_id', attemptIds);
-        }
+      // 2. Cascade delete student records
+      const { data: attempts } = await supabase
+        .from('attempts')
+        .select('id')
+        .eq('student_id', accountToDelete.id);
 
-        await supabase.from('suspicious_events').delete().eq('student_id', accountToDelete.id);
-        await supabase.from('results').delete().eq('student_id', accountToDelete.id);
-        await supabase.from('attempts').delete().eq('student_id', accountToDelete.id);
+      if (attempts && attempts.length > 0) {
+        const attemptIds = attempts.map((a) => a.id);
+        await supabase.from('attempt_answers').delete().in('attempt_id', attemptIds);
+      }
 
-        // 3. Delete profile
-        const { error: profDeleteErr } = await supabase
+      await supabase.from('suspicious_events').delete().eq('student_id', accountToDelete.id);
+      await supabase.from('results').delete().eq('student_id', accountToDelete.id);
+      await supabase.from('attempts').delete().eq('student_id', accountToDelete.id);
+
+      // 3. Try deleting profile directly
+      const { data: deletedProfiles } = await supabase
+        .from('profiles')
+        .delete()
+        .eq('id', accountToDelete.id)
+        .select();
+
+      // If RLS silently ignored DELETE (0 rows affected), deactivate profile via UPDATE
+      if (!deletedProfiles || deletedProfiles.length === 0) {
+        const { error: updateErr } = await supabase
           .from('profiles')
-          .delete()
-          .eq('id', accountToDelete.id);
-
-        // If direct DELETE is restricted by RLS, sanitize & deactivate the profile
-        if (profDeleteErr) {
-          console.warn('Deactivating profile via update:', profDeleteErr);
-          await supabase.from('profiles').update({
+          .update({
             full_name: `[FRAUD DELETED] ${accountToDelete.full_name}`,
             school_name: '[ACCOUNT PERMANENTLY TERMINATED BY TEACHER]',
             email: `fraud_${accountToDelete.id.slice(0, 8)}@terminated.local`,
             phone: '0000000000',
             updated_at: new Date().toISOString(),
-          }).eq('id', accountToDelete.id);
-        }
+          })
+          .eq('id', accountToDelete.id);
+
+        if (updateErr) throw updateErr;
       }
 
       setAccountToDelete(null);
       setConfirmedFraud(false);
       await fetchStudents();
+      alert(`Account for ${accountToDelete.full_name} has been purged and removed from your website.`);
     } catch (err: any) {
       console.error('Delete error:', err);
       alert(`Error deleting account: ${err.message || 'Please check permissions.'}`);
@@ -165,6 +176,7 @@ $$;`;
   // Filter students (exclude already marked fraud/terminated accounts)
   const filteredStudents = students.filter((s) => {
     if (s.full_name?.startsWith('[FRAUD DELETED]')) return false;
+    if (s.school_name === '[ACCOUNT PERMANENTLY TERMINATED BY TEACHER]') return false;
     if (selectedClass !== 'all' && s.class !== selectedClass) return false;
     if (selectedRole !== 'all' && s.role !== selectedRole) return false;
 

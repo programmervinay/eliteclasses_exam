@@ -47,7 +47,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         console.error('Error fetching profile:', error);
         return null;
       }
-      return data as Profile;
+      
+      const prof = data as Profile;
+      if (prof?.full_name?.startsWith('[FRAUD DELETED]') || prof?.school_name === '[ACCOUNT PERMANENTLY TERMINATED BY TEACHER]') {
+        await supabase.auth.signOut().catch(() => {});
+        return null;
+      }
+      return prof;
     } catch (err) {
       console.error('Profile fetch exception:', err);
       return null;
@@ -100,6 +106,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (error) throw error;
       if (data.user) {
         const prof = await fetchProfile(data.user.id);
+        if (!prof) {
+          await supabase.auth.signOut().catch(() => {});
+          return { error: new Error('This account has been permanently terminated by the administrator.') };
+        }
         setProfile(prof);
       }
       return { error: null };
