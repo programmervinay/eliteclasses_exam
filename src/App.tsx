@@ -36,9 +36,9 @@ const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const isExamSession = location.pathname.includes('/session/');
 
   return (
-    <div className="flex flex-col min-h-screen">
+    <div className="flex flex-col min-h-screen w-full max-w-full overflow-x-hidden">
       {!isExamSession && <Navbar />}
-      <div className="flex-1">{children}</div>
+      <div className="flex-1 w-full max-w-full overflow-x-hidden">{children}</div>
       {!isExamSession && <Footer />}
     </div>
   );

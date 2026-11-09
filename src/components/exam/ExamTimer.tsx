@@ -88,29 +88,29 @@ export const ExamTimer: React.FC<ExamTimerProps> = ({
     : (activeRemaining / questionTimeLimitSeconds) * 100;
 
   return (
-    <div className={`flex items-center gap-2.5 px-3 py-1.5 rounded-xl border transition-all ${
+    <div className={`flex items-center gap-1.5 sm:gap-2.5 px-2 sm:px-3 py-1 sm:py-1.5 rounded-xl border shrink-0 transition-all ${
       isUrgent
         ? 'border-red-500 bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300 animate-pulse'
         : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 shadow-sm'
     }`}>
       {isUrgent ? (
-        <AlertTriangle className="h-4 w-4 text-red-500 shrink-0" />
+        <AlertTriangle className="h-3.5 sm:h-4 w-3.5 sm:w-4 text-red-500 shrink-0" />
       ) : (
-        <Clock className="h-4 w-4 text-brand-600 dark:text-brand-400 shrink-0" />
+        <Clock className="h-3.5 sm:h-4 w-3.5 sm:w-4 text-brand-600 dark:text-brand-400 shrink-0" />
       )}
       
       <div className="flex flex-col">
         <div className="flex items-center gap-1.5">
-          <span className="font-mono text-sm font-bold tracking-tight">
+          <span className="font-mono text-xs sm:text-sm font-bold tracking-tight">
             {formattedTime}
           </span>
-          <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">
+          <span className="hidden sm:inline text-[10px] text-slate-500 dark:text-slate-400 font-medium">
             {timerMode === 'question' ? 'Q-Timer' : 'Remaining'}
           </span>
         </div>
         
-        {/* Micro progress bar */}
-        <div className="w-20 h-1 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden mt-0.5">
+        {/* Micro progress bar (Desktop only to conserve mobile header space) */}
+        <div className="hidden sm:block w-20 h-1 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden mt-0.5">
           <div
             className={`h-full rounded-full transition-all duration-1000 ${
               isUrgent ? 'bg-red-500' : 'bg-brand-600'

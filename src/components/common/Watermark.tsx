@@ -21,7 +21,7 @@ export const Watermark: React.FC<WatermarkProps> = ({
 
   return (
     <div 
-      className="pointer-events-none fixed inset-0 z-30 select-none overflow-hidden opacity-10 dark:opacity-5 transition-opacity"
+      className="pointer-events-none fixed inset-0 z-30 select-none overflow-hidden opacity-10 dark:opacity-5 transition-opacity max-w-full max-h-full"
       aria-hidden="true"
     >
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-16 p-6 rotate-[-20deg] scale-110">

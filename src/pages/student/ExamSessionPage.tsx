@@ -344,7 +344,7 @@ export const ExamSessionPage: React.FC = () => {
   const totalUnanswered = questions.length - totalAnswered;
 
   return (
-    <div className="relative min-h-screen bg-slate-100 dark:bg-slate-950 no-select pb-12">
+    <div className="relative min-h-screen w-full max-w-full overflow-x-hidden bg-slate-100 dark:bg-slate-950 no-select pb-12">
       
       {/* Anti-Cheat Dynamic Watermark Overlay */}
       <Watermark
@@ -363,19 +363,19 @@ export const ExamSessionPage: React.FC = () => {
       )}
 
       {/* Top Fixed Examination Bar */}
-      <header className="sticky top-0 z-40 w-full border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm px-4 sm:px-6 py-3">
-        <div className="mx-auto max-w-7xl flex items-center justify-between gap-4">
+      <header className="sticky top-0 z-40 w-full border-b border-slate-200 dark:border-slate-800 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md shadow-sm px-3 sm:px-6 py-2.5 sm:py-3">
+        <div className="mx-auto max-w-7xl flex items-center justify-between gap-2 sm:gap-4">
           
-          <div className="flex items-center gap-3">
-            <span className="hidden sm:inline-flex px-2.5 py-1 rounded-lg text-xs font-bold bg-brand-50 dark:bg-brand-950 text-brand-600 dark:text-brand-400">
+          <div className="flex items-center gap-2 min-w-0 flex-1">
+            <span className="hidden sm:inline-flex px-2 py-0.5 rounded-lg text-xs font-bold bg-brand-50 dark:bg-brand-950 text-brand-600 dark:text-brand-400 shrink-0">
               Class {exam?.class}
             </span>
-            <h1 className="text-sm sm:text-base font-extrabold text-slate-900 dark:text-white truncate max-w-xs sm:max-w-md">
+            <h1 className="text-xs sm:text-sm md:text-base font-extrabold text-slate-900 dark:text-white truncate">
               {exam?.title}
             </h1>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
             {/* Timer */}
             {exam && (
               <ExamTimer
@@ -393,7 +393,7 @@ export const ExamSessionPage: React.FC = () => {
             <button
               type="button"
               onClick={() => setIsSubmitModalOpen(true)}
-              className="inline-flex items-center gap-1.5 rounded-xl bg-brand-600 px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-brand-700 transition-all shrink-0"
+              className="inline-flex items-center gap-1 sm:gap-1.5 rounded-xl bg-brand-600 px-3 sm:px-4 py-1.5 sm:py-2 text-xs font-bold text-white shadow-sm hover:bg-brand-700 transition-all shrink-0"
             >
               <Send className="h-3.5 w-3.5" />
               <span>Submit</span>
@@ -404,8 +404,8 @@ export const ExamSessionPage: React.FC = () => {
       </header>
 
       {/* Main Examination Layout */}
-      <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pt-6">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+      <main className="mx-auto max-w-7xl px-3 sm:px-6 lg:px-8 pt-4 sm:pt-6">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 sm:gap-6">
           
           {/* Question Card (Col 1-3) */}
           <div className="lg:col-span-3 space-y-4">
@@ -419,28 +419,28 @@ export const ExamSessionPage: React.FC = () => {
             />
 
             {/* Bottom Question Controls */}
-            <div className="flex items-center justify-between p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm">
+            <div className="flex items-center justify-between gap-2 p-3 sm:p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm">
               <button
                 type="button"
                 disabled={currentIndex === 0 || exam?.navigation_mode === 'next_only'}
                 onClick={handlePrev}
-                className="inline-flex items-center gap-1.5 rounded-xl border border-slate-300 dark:border-slate-700 px-4 py-2 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed"
+                className="inline-flex items-center gap-1 sm:gap-1.5 rounded-xl border border-slate-300 dark:border-slate-700 px-3 sm:px-4 py-2 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
               >
-                <ArrowLeft className="h-4 w-4" />
-                <span>Previous</span>
+                <ArrowLeft className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                <span className="hidden xs:inline">Previous</span>
               </button>
 
-              <span className="text-xs font-semibold text-slate-500">
+              <span className="text-[11px] sm:text-xs font-semibold text-slate-500 text-center truncate">
                 Question {currentIndex + 1} of {questions.length}
               </span>
 
               <button
                 type="button"
                 onClick={handleNext}
-                className="inline-flex items-center gap-1.5 rounded-xl bg-brand-600 px-5 py-2 text-xs font-bold text-white shadow-sm hover:bg-brand-700 transition-all"
+                className="inline-flex items-center gap-1 sm:gap-1.5 rounded-xl bg-brand-600 px-3.5 sm:px-5 py-2 text-xs font-bold text-white shadow-sm hover:bg-brand-700 transition-all shrink-0"
               >
                 <span>{currentIndex === questions.length - 1 ? 'Finish & Review' : 'Save & Next'}</span>
-                <ArrowRight className="h-4 w-4" />
+                <ArrowRight className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
               </button>
             </div>
           </div>
