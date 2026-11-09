@@ -35,19 +35,19 @@ export const Navbar: React.FC = () => {
   const isActive = (path: string) => location.pathname === path;
 
   return (
-    <header className="sticky top-0 z-40 w-full border-b border-slate-200/80 bg-white/90 backdrop-blur-md dark:border-slate-800 dark:bg-slate-900/90 transition-colors">
-      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+    <header className="sticky top-0 z-40 w-full max-w-full overflow-hidden border-b border-slate-200/80 bg-white/90 backdrop-blur-md dark:border-slate-800 dark:bg-slate-900/90 transition-colors">
+      <div className="mx-auto flex h-16 w-full max-w-7xl items-center justify-between px-3 sm:px-6 lg:px-8">
         
         {/* Brand Logo */}
-        <Link to="/" className="flex items-center gap-3 group">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-tr from-brand-600 to-indigo-600 text-white shadow-md shadow-brand-500/25 group-hover:scale-105 transition-transform">
-            <GraduationCap className="h-6 w-6" />
+        <Link to="/" className="flex items-center gap-2.5 sm:gap-3 group shrink-0">
+          <div className="flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-xl bg-gradient-to-tr from-brand-600 to-indigo-600 text-white shadow-md shadow-brand-500/25 group-hover:scale-105 transition-transform">
+            <GraduationCap className="h-5 w-5 sm:h-6 sm:w-6" />
           </div>
           <div className="flex flex-col">
-            <span className="text-xl font-extrabold tracking-tight bg-gradient-to-r from-brand-600 via-indigo-600 to-blue-500 bg-clip-text text-transparent">
+            <span className="text-lg sm:text-xl font-extrabold tracking-tight bg-gradient-to-r from-brand-600 via-indigo-600 to-blue-500 bg-clip-text text-transparent">
               {APP_CONFIG.name}
             </span>
-            <span className="text-[10px] font-medium tracking-wide text-slate-500 dark:text-slate-400">
+            <span className="text-[9px] sm:text-[10px] font-medium tracking-wide text-slate-500 dark:text-slate-400">
               Powered by {APP_CONFIG.creator}
             </span>
           </div>
@@ -175,19 +175,19 @@ export const Navbar: React.FC = () => {
         </nav>
 
         {/* Right side Actions (Theme toggle + Profile/Login) */}
-        <div className="flex items-center gap-2 sm:gap-3">
+        <div className="flex items-center gap-1 sm:gap-2.5 shrink-0">
           <NotificationBell />
 
           <button
             onClick={toggleTheme}
             aria-label="Toggle theme"
-            className="rounded-lg p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200 transition-colors"
+            className="rounded-lg p-1.5 sm:p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200 transition-colors"
           >
-            {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+            {theme === 'dark' ? <Sun className="h-4.5 w-4.5 sm:h-5 sm:w-5" /> : <Moon className="h-4.5 w-4.5 sm:h-5 sm:w-5" />}
           </button>
 
           {user ? (
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5 sm:gap-2">
               <div className="hidden sm:flex flex-col text-right">
                 <span className="text-xs font-semibold text-slate-800 dark:text-slate-200">
                   {profile?.full_name || user.email?.split('@')[0]}
@@ -198,7 +198,7 @@ export const Navbar: React.FC = () => {
               </div>
               <button
                 onClick={handleLogout}
-                className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 py-1.5 text-xs font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors"
+                className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-1.5 sm:px-3 sm:py-1.5 text-xs font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors"
                 title="Log out"
               >
                 <LogOut className="h-3.5 w-3.5" />
@@ -317,7 +317,7 @@ export const Navbar: React.FC = () => {
                 rel="noopener noreferrer"
                 className="block px-3 py-2 rounded-md text-sm font-medium text-emerald-600 dark:text-emerald-400"
               >
-                WhatsApp Teacher (8081788927)
+                WhatsApp Teacher
               </a>
               <button
                 onClick={() => {

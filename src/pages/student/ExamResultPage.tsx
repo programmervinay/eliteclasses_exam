@@ -76,7 +76,7 @@ export const ExamResultPage: React.FC = () => {
   const exam = result.exam;
   const student = result.student || profile;
 
-  // WhatsApp Share URL to Teacher Vinay Prajapati (8081788927)
+  // WhatsApp Share URL to Teacher Vinay Prajapati
   const studentName = student?.full_name || 'Student';
   const studentClass = student?.class || '10th';
   const examTitle = exam?.title || 'Examination';
@@ -192,7 +192,7 @@ export const ExamResultPage: React.FC = () => {
         {/* Actions (WhatsApp Share Button prominently placed) */}
         <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
           
-          {/* Share on WhatsApp Button (to Vinay Prajapati 8081788927) */}
+          {/* Share on WhatsApp Button (to Vinay Prajapati) */}
           <a
             href={whatsappUrl}
             target="_blank"
@@ -200,7 +200,7 @@ export const ExamResultPage: React.FC = () => {
             className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-6 py-3.5 text-sm font-bold text-white shadow-lg shadow-emerald-600/25 hover:bg-emerald-700 transition-all hover:scale-105"
           >
             <Share2 className="h-4 w-4" />
-            <span>Share Result on WhatsApp (8081788927)</span>
+            <span>Share Result on WhatsApp</span>
           </a>
 
           {/* Review Answers Button (if allowed by teacher) */}

@@ -216,7 +216,7 @@ export const HomePage: React.FC = () => {
                 Instant WhatsApp Scorecard
               </h3>
               <p className="text-xs text-slate-500 leading-relaxed mb-4">
-                Students can immediately share their verified result card directly with Teacher Vinay Prajapati via WhatsApp (+91 8081788927) with a single click.
+                Students can immediately share their verified result card directly with Teacher Vinay Prajapati via WhatsApp with a single click.
               </p>
               <ul className="text-xs text-slate-600 dark:text-slate-400 space-y-2">
                 <li className="flex items-center gap-2">
@@ -257,7 +257,7 @@ export const HomePage: React.FC = () => {
               className="inline-flex items-center gap-2 rounded-2xl bg-white px-6 py-3 text-sm font-bold text-brand-700 shadow-md hover:bg-slate-100 transition-all shrink-0"
             >
               <MessageSquare className="h-4 w-4 text-emerald-600" />
-              <span>WhatsApp: 8081788927</span>
+              <span>Chat on WhatsApp</span>
             </a>
           </div>
         </div>

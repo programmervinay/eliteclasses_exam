@@ -37,7 +37,7 @@ export const Footer: React.FC = () => {
               className="flex items-center gap-1.5 text-emerald-600 hover:text-emerald-700 font-medium"
             >
               <MessageSquare className="h-3.5 w-3.5" />
-              WhatsApp Help: +91 {APP_CONFIG.adminWhatsApp}
+              <span>Chat on WhatsApp</span>
             </a>
           </div>
 

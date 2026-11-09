@@ -41,7 +41,19 @@ export const ExamSessionPage: React.FC = () => {
   const violationCounts = useRef<Record<string, number>>({});
   const [isSubmitModalOpen, setIsSubmitModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const isSubmitModalOpenRef = useRef(false);
+  const isSubmittingRef = useRef(false);
   const [loading, setLoading] = useState(true);
+
+  const openSubmitModal = () => {
+    isSubmitModalOpenRef.current = true;
+    setIsSubmitModalOpen(true);
+  };
+
+  const closeSubmitModal = () => {
+    isSubmitModalOpenRef.current = false;
+    setIsSubmitModalOpen(false);
+  };
 
   // 1. Initial Load of Exam, Attempt, Questions, and Existing Answers
   useEffect(() => {
@@ -129,6 +141,8 @@ export const ExamSessionPage: React.FC = () => {
 
   // 2. Anti-Cheating Event Logger
   const logSuspiciousEvent = async (eventType: SuspiciousEventType, metadata: Record<string, any> = {}) => {
+    // Suppress all anti-cheat detection when student is reviewing submission or submitting
+    if (isSubmittingRef.current || isSubmitModalOpenRef.current) return;
     if (!user || !examId || !attemptId) return;
 
     // Increment local violation counter
@@ -163,6 +177,7 @@ export const ExamSessionPage: React.FC = () => {
   useEffect(() => {
     // Visibility change (tab switch, window minimization)
     const handleVisibilityChange = () => {
+      if (isSubmittingRef.current || isSubmitModalOpenRef.current) return;
       if (document.hidden) {
         logSuspiciousEvent('tab_switch', { action: 'document_hidden' });
       }
@@ -170,6 +185,9 @@ export const ExamSessionPage: React.FC = () => {
 
     // Fullscreen change
     const handleFullscreenChange = () => {
+      if (isSubmittingRef.current || isSubmitModalOpenRef.current) return;
+      // On mobile screens (< 768px), mobile browsers don't have stable fullscreen API and trigger spurious exits
+      if (typeof window !== 'undefined' && window.innerWidth < 768) return;
       if (!document.fullscreenElement) {
         logSuspiciousEvent('fullscreen_exit', { action: 'exited_fullscreen' });
       }
@@ -177,17 +195,20 @@ export const ExamSessionPage: React.FC = () => {
 
     // Window blur
     const handleWindowBlur = () => {
+      if (isSubmittingRef.current || isSubmitModalOpenRef.current) return;
       logSuspiciousEvent('window_blur', { action: 'window_lost_focus' });
     };
 
     // Context menu (right click)
     const handleContextMenu = (e: MouseEvent) => {
+      if (isSubmittingRef.current || isSubmitModalOpenRef.current) return;
       e.preventDefault();
       logSuspiciousEvent('context_menu', { action: 'right_click_prevented' });
     };
 
     // Copy / Cut / PrintScreen keys
     const handleKeyDown = (e: KeyboardEvent) => {
+      if (isSubmittingRef.current || isSubmitModalOpenRef.current) return;
       if (
         (e.ctrlKey || e.metaKey) &&
         ['c', 'x', 'a', 'p', 'u', 's'].includes(e.key.toLowerCase())
@@ -272,7 +293,7 @@ export const ExamSessionPage: React.FC = () => {
       setVisitedIndices((prev) => new Set([...prev, nextIdx]));
     } else {
       // Last question -> open submit confirmation
-      setIsSubmitModalOpen(true);
+      openSubmitModal();
     }
   };
 
@@ -294,9 +315,16 @@ export const ExamSessionPage: React.FC = () => {
   // 7. Examination Submission (Calls Server-Side RPC `submit_exam_attempt`)
   const handleSubmitExam = async () => {
     if (!attemptId || !examId) return;
+    isSubmittingRef.current = true;
+    isSubmitModalOpenRef.current = true;
     setIsSubmitting(true);
 
     try {
+      // Exit fullscreen safely if active without triggering anti-cheat
+      if (document.fullscreenElement && document.exitFullscreen) {
+        await document.exitFullscreen().catch(() => {});
+      }
+
       // Call secure Supabase RPC function
       const { data, error } = await supabase.rpc('submit_exam_attempt', {
         p_attempt_id: attemptId,
@@ -304,16 +332,12 @@ export const ExamSessionPage: React.FC = () => {
 
       if (error) throw error;
 
-      // Exit fullscreen if active
-      if (document.fullscreenElement && document.exitFullscreen) {
-        await document.exitFullscreen().catch(() => {});
-      }
-
       // Redirect to score / result page
       navigate(`/exam/${examId}/result/${attemptId}`, { replace: true });
     } catch (err: any) {
       console.error('Submission error:', err);
       alert('Error submitting examination. Please try again.');
+      isSubmittingRef.current = false;
       setIsSubmitting(false);
     }
   };
@@ -363,10 +387,10 @@ export const ExamSessionPage: React.FC = () => {
       )}
 
       {/* Top Fixed Examination Bar */}
-      <header className="sticky top-0 z-40 w-full border-b border-slate-200 dark:border-slate-800 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md shadow-sm px-3 sm:px-6 py-2.5 sm:py-3">
-        <div className="mx-auto max-w-7xl flex items-center justify-between gap-2 sm:gap-4">
+      <header className="sticky top-0 z-40 w-full max-w-full overflow-hidden border-b border-slate-200 dark:border-slate-800 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md shadow-sm px-2.5 sm:px-6 py-2 sm:py-3">
+        <div className="mx-auto max-w-7xl flex items-center justify-between gap-1.5 sm:gap-4 w-full">
           
-          <div className="flex items-center gap-2 min-w-0 flex-1">
+          <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 flex-1">
             <span className="hidden sm:inline-flex px-2 py-0.5 rounded-lg text-xs font-bold bg-brand-50 dark:bg-brand-950 text-brand-600 dark:text-brand-400 shrink-0">
               Class {exam?.class}
             </span>
@@ -375,7 +399,7 @@ export const ExamSessionPage: React.FC = () => {
             </h1>
           </div>
 
-          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+          <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
             {/* Timer */}
             {exam && (
               <ExamTimer
@@ -392,8 +416,8 @@ export const ExamSessionPage: React.FC = () => {
             {/* Quick Submit Button */}
             <button
               type="button"
-              onClick={() => setIsSubmitModalOpen(true)}
-              className="inline-flex items-center gap-1 sm:gap-1.5 rounded-xl bg-brand-600 px-3 sm:px-4 py-1.5 sm:py-2 text-xs font-bold text-white shadow-sm hover:bg-brand-700 transition-all shrink-0"
+              onClick={openSubmitModal}
+              className="inline-flex items-center gap-1 sm:gap-1.5 rounded-xl bg-brand-600 px-2.5 sm:px-4 py-1.5 sm:py-2 text-xs font-bold text-white shadow-sm hover:bg-brand-700 transition-all shrink-0"
             >
               <Send className="h-3.5 w-3.5" />
               <span>Submit</span>
@@ -427,7 +451,7 @@ export const ExamSessionPage: React.FC = () => {
                 className="inline-flex items-center gap-1 sm:gap-1.5 rounded-xl border border-slate-300 dark:border-slate-700 px-3 sm:px-4 py-2 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
               >
                 <ArrowLeft className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                <span className="hidden xs:inline">Previous</span>
+                <span className="hidden sm:inline">Previous</span>
               </button>
 
               <span className="text-[11px] sm:text-xs font-semibold text-slate-500 text-center truncate">
@@ -474,7 +498,7 @@ export const ExamSessionPage: React.FC = () => {
       {/* Submit Confirmation Modal */}
       <SubmitModal
         isOpen={isSubmitModalOpen}
-        onClose={() => setIsSubmitModalOpen(false)}
+        onClose={closeSubmitModal}
         onConfirm={handleSubmitExam}
         isSubmitting={isSubmitting}
         totalQuestions={questions.length}

@@ -58,7 +58,7 @@ export const RegisterPage: React.FC = () => {
 
     if (isTeacher && email.trim().toLowerCase() !== 'gitwala.vinay@gmail.com') {
       if (teacherCode.trim() !== 'ELITE2026') {
-        setErrorMsg('Invalid Teacher Passcode. Please contact Vinay Prajapati (8081788927) for the teacher access code.');
+        setErrorMsg('Invalid Teacher Passcode. Please contact Vinay Prajapati on WhatsApp for the teacher access code.');
         return;
       }
     }
@@ -193,7 +193,7 @@ export const RegisterPage: React.FC = () => {
                   type="tel"
                   required
                   maxLength={10}
-                  placeholder="8081788927"
+                  placeholder="e.g. 9876543210"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value.replace(/\D/g, ''))}
                   className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 pl-10 pr-3.5 py-2.5 text-sm font-mono focus:border-brand-500 focus:outline-none dark:text-white"
