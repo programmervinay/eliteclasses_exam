@@ -362,7 +362,13 @@ export const StudentDashboard: React.FC = () => {
                       <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 grid grid-cols-2 gap-2 text-xs text-slate-500">
                         <div className="flex items-center gap-1.5">
                           <Clock className="h-3.5 w-3.5 text-slate-400" />
-                          <span>{Math.round(exam.duration_seconds / 60)} Mins</span>
+                          <span>
+                            {exam.timer_mode === 'question'
+                              ? `${exam.duration_seconds < 60 ? `${exam.duration_seconds}s` : `${Math.round(exam.duration_seconds / 60)}m`} / Q`
+                              : exam.timer_mode === 'none'
+                              ? 'No Limit'
+                              : `${Math.round(exam.duration_seconds / 60)} Mins`}
+                          </span>
                         </div>
                         <div className="flex items-center gap-1.5">
                           <Award className="h-3.5 w-3.5 text-slate-400" />

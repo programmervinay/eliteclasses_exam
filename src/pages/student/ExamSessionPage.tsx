@@ -405,7 +405,11 @@ export const ExamSessionPage: React.FC = () => {
               <ExamTimer
                 timerMode={exam.timer_mode}
                 totalDurationSeconds={exam.duration_seconds}
-                questionTimeLimitSeconds={currentQ.time_limit_seconds || 60}
+                questionTimeLimitSeconds={
+                  exam.timer_mode === 'question'
+                    ? (exam.duration_seconds || currentQ.time_limit_seconds || 60)
+                    : (currentQ.time_limit_seconds || 60)
+                }
                 currentQuestionIndex={currentIndex}
                 startedAt={attempt?.started_at}
                 onTimeExpired={handleSubmitExam}

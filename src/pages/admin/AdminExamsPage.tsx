@@ -249,7 +249,15 @@ export const AdminExamsPage: React.FC = () => {
                           {exam.subject?.name || 'General'}
                         </td>
                         <td className="p-4 font-mono text-slate-600 dark:text-slate-400">
-                          {Math.round(exam.duration_seconds / 60)}m
+                          {exam.timer_mode === 'question' ? (
+                            <span className="text-brand-600 dark:text-brand-400 font-bold">
+                              {exam.duration_seconds < 60 ? `${exam.duration_seconds}s` : `${Math.round(exam.duration_seconds / 60)}m`} / Q
+                            </span>
+                          ) : exam.timer_mode === 'none' ? (
+                            <span className="text-slate-400">None</span>
+                          ) : (
+                            <span>{Math.round(exam.duration_seconds / 60)}m</span>
+                          )}
                         </td>
                         <td className="p-4 font-mono font-bold text-slate-700 dark:text-slate-300">
                           {exam.total_marks}

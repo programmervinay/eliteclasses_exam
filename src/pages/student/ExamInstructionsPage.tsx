@@ -187,7 +187,11 @@ export const ExamInstructionsPage: React.FC = () => {
             <Clock className="mx-auto h-5 w-5 text-brand-500 mb-1" />
             <span className="text-[10px] text-slate-400 font-bold uppercase">Duration</span>
             <p className="text-sm font-extrabold text-slate-900 dark:text-white">
-              {exam.timer_mode === 'none' ? 'No Limit' : `${Math.round(exam.duration_seconds / 60)} Mins`}
+              {exam.timer_mode === 'question'
+                ? `${exam.duration_seconds < 60 ? `${exam.duration_seconds} Sec` : `${Math.round(exam.duration_seconds / 60)} Min`} / Q`
+                : exam.timer_mode === 'none'
+                ? 'No Limit'
+                : `${Math.round(exam.duration_seconds / 60)} Mins`}
             </p>
           </div>
 

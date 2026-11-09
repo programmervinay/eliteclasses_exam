@@ -27,7 +27,8 @@ export const ExamFormModal: React.FC<ExamFormModalProps> = ({
   const [subjectId, setSubjectId] = useState<string>('');
   const [topic, setTopic] = useState('');
   const [status, setStatus] = useState<ExamStatus>('draft');
-  const [durationMinutes, setDurationMinutes] = useState(30);
+  const [durationValue, setDurationValue] = useState<number>(30);
+  const [durationUnit, setDurationUnit] = useState<'minutes' | 'seconds'>('minutes');
   const [timerMode, setTimerMode] = useState<TimerMode>('exam');
   const [navigationMode, setNavigationMode] = useState<NavigationMode>('both');
   const [totalMarks, setTotalMarks] = useState(20);
@@ -60,8 +61,21 @@ export const ExamFormModal: React.FC<ExamFormModalProps> = ({
       setSubjectId(examToEdit.subject_id || '');
       setTopic(examToEdit.topic || '');
       setStatus(examToEdit.status);
-      setDurationMinutes(Math.round(examToEdit.duration_seconds / 60));
+
       setTimerMode(examToEdit.timer_mode);
+      if (examToEdit.timer_mode === 'question') {
+        if (examToEdit.duration_seconds < 60 || examToEdit.duration_seconds % 60 !== 0) {
+          setDurationUnit('seconds');
+          setDurationValue(examToEdit.duration_seconds || 60);
+        } else {
+          setDurationUnit('minutes');
+          setDurationValue(Math.round(examToEdit.duration_seconds / 60) || 1);
+        }
+      } else {
+        setDurationUnit('minutes');
+        setDurationValue(Math.round(examToEdit.duration_seconds / 60) || 30);
+      }
+
       setNavigationMode(examToEdit.navigation_mode);
       setTotalMarks(examToEdit.total_marks);
       setPassingMarks(examToEdit.passing_marks);
@@ -77,8 +91,9 @@ export const ExamFormModal: React.FC<ExamFormModalProps> = ({
       setStudentClass('10th');
       setTopic('');
       setStatus('published');
-      setDurationMinutes(30);
       setTimerMode('exam');
+      setDurationUnit('minutes');
+      setDurationValue(30);
       setNavigationMode('both');
       setTotalMarks(20);
       setPassingMarks(8);
@@ -89,6 +104,17 @@ export const ExamFormModal: React.FC<ExamFormModalProps> = ({
     }
     setErrorMsg(null);
   }, [examToEdit, isOpen]);
+
+  const handleTimerModeChange = (mode: TimerMode) => {
+    setTimerMode(mode);
+    if (mode === 'question') {
+      setDurationUnit('seconds');
+      setDurationValue(60);
+    } else if (mode === 'exam') {
+      setDurationUnit('minutes');
+      setDurationValue(30);
+    }
+  };
 
   if (!isOpen) return null;
 
@@ -102,6 +128,12 @@ export const ExamFormModal: React.FC<ExamFormModalProps> = ({
     setLoading(true);
     setErrorMsg(null);
 
+    const calculatedDurationSeconds = timerMode === 'none'
+      ? 0
+      : timerMode === 'question' && durationUnit === 'seconds'
+      ? Math.max(5, Number(durationValue))
+      : Math.max(1, Number(durationValue)) * 60;
+
     const payload = {
       title: title.trim(),
       description: description.trim() || null,
@@ -109,7 +141,7 @@ export const ExamFormModal: React.FC<ExamFormModalProps> = ({
       subject_id: subjectId || null,
       topic: topic.trim() || null,
       status,
-      duration_seconds: durationMinutes * 60,
+      duration_seconds: calculatedDurationSeconds,
       timer_mode: timerMode,
       navigation_mode: navigationMode,
       total_marks: Number(totalMarks),
@@ -245,6 +277,37 @@ export const ExamFormModal: React.FC<ExamFormModalProps> = ({
             </div>
           </div>
 
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800">
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                Timer Mode *
+              </label>
+              <select
+                value={timerMode}
+                onChange={(e) => handleTimerModeChange(e.target.value as TimerMode)}
+                className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none dark:text-white text-xs font-semibold"
+              >
+                <option value="exam">Mode 2: Whole Exam Timer</option>
+                <option value="question">Mode 1: Per-Question Timer (Seconds & Minutes)</option>
+                <option value="none">Mode 3: No Timer</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                Navigation Mode *
+              </label>
+              <select
+                value={navigationMode}
+                onChange={(e) => setNavigationMode(e.target.value as NavigationMode)}
+                className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none dark:text-white text-xs font-semibold"
+              >
+                <option value="both">Mode 1: Previous + Next (Free Navigation)</option>
+                <option value="next_only">Mode 2: Next Only (Locked on Forward)</option>
+              </select>
+            </div>
+          </div>
+
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
@@ -259,48 +322,138 @@ export const ExamFormModal: React.FC<ExamFormModalProps> = ({
               />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                Duration (Minutes)
-              </label>
-              <input
-                type="number"
-                min="1"
-                max="300"
-                value={durationMinutes}
-                onChange={(e) => setDurationMinutes(Number(e.target.value))}
-                className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none dark:text-white font-mono"
-              />
-            </div>
-          </div>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
+                  {timerMode === 'question' 
+                    ? 'Per-Question Time Limit *' 
+                    : timerMode === 'none' 
+                    ? 'Exam Timer' 
+                    : 'Exam Duration *'}
+                </label>
+                {timerMode === 'question' && (
+                  <div className="inline-flex rounded-lg border border-slate-200 dark:border-slate-700 p-0.5 bg-slate-100 dark:bg-slate-800 text-[11px] font-bold">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (durationUnit !== 'seconds') {
+                          setDurationUnit('seconds');
+                          setDurationValue((prev) => (prev <= 10 ? prev * 60 : prev) || 60);
+                        }
+                      }}
+                      className={`px-2 py-0.5 rounded-md transition-all ${
+                        durationUnit === 'seconds'
+                          ? 'bg-brand-600 text-white shadow-sm'
+                          : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+                      }`}
+                    >
+                      Seconds (s)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (durationUnit !== 'minutes') {
+                          setDurationUnit('minutes');
+                          setDurationValue((prev) => Math.max(1, Math.round(prev / 60)) || 1);
+                        }
+                      }}
+                      className={`px-2 py-0.5 rounded-md transition-all ${
+                        durationUnit === 'minutes'
+                          ? 'bg-brand-600 text-white shadow-sm'
+                          : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+                      }`}
+                    >
+                      Minutes (m)
+                    </button>
+                  </div>
+                )}
+              </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800">
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                Timer Mode
-              </label>
-              <select
-                value={timerMode}
-                onChange={(e) => setTimerMode(e.target.value as TimerMode)}
-                className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none dark:text-white text-xs"
-              >
-                <option value="exam">Mode 2: Whole Exam Timer</option>
-                <option value="question">Mode 1: Per-Question Timer</option>
-                <option value="none">Mode 3: No Timer</option>
-              </select>
-            </div>
+              {timerMode === 'none' ? (
+                <div className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800/60 px-3 py-2 text-xs text-slate-500 font-medium">
+                  No timer restrictions active for this examination.
+                </div>
+              ) : (
+                <div>
+                  <div className="relative">
+                    <input
+                      type="number"
+                      required
+                      min={durationUnit === 'seconds' ? 5 : 1}
+                      max={durationUnit === 'seconds' ? 600 : 300}
+                      step={durationUnit === 'seconds' ? 5 : 1}
+                      value={durationValue}
+                      onChange={(e) => setDurationValue(Number(e.target.value))}
+                      className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none dark:text-white font-mono"
+                      placeholder={durationUnit === 'seconds' ? 'e.g. 45' : 'e.g. 30'}
+                    />
+                    <span className="absolute right-3 top-2 text-xs font-semibold text-slate-400">
+                      {durationUnit === 'seconds' ? 'seconds' : 'minutes'}
+                    </span>
+                  </div>
 
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                Navigation Mode
-              </label>
-              <select
-                value={navigationMode}
-                onChange={(e) => setNavigationMode(e.target.value as NavigationMode)}
-                className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none dark:text-white text-xs"
-              >
-                <option value="both">Mode 1: Previous + Next (Free Navigation)</option>
-                <option value="next_only">Mode 2: Next Only (Locked on Forward)</option>
-              </select>
+                  {/* Quick Preset Pills */}
+                  <div className="flex flex-wrap items-center gap-1.5 mt-2">
+                    <span className="text-[10px] text-slate-400 font-medium">Presets:</span>
+                    {timerMode === 'question' ? (
+                      durationUnit === 'seconds' ? (
+                        [15, 30, 45, 60, 90, 120].map((sec) => (
+                          <button
+                            key={sec}
+                            type="button"
+                            onClick={() => {
+                              setDurationUnit('seconds');
+                              setDurationValue(sec);
+                            }}
+                            className={`px-2 py-0.5 rounded-md text-[10px] font-bold border transition-all ${
+                              durationUnit === 'seconds' && durationValue === sec
+                                ? 'bg-brand-50 border-brand-500 text-brand-700 dark:bg-brand-950 dark:text-brand-300'
+                                : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-slate-300'
+                            }`}
+                          >
+                            {sec}s
+                          </button>
+                        ))
+                      ) : (
+                        [1, 2, 3, 5].map((min) => (
+                          <button
+                            key={min}
+                            type="button"
+                            onClick={() => {
+                              setDurationUnit('minutes');
+                              setDurationValue(min);
+                            }}
+                            className={`px-2 py-0.5 rounded-md text-[10px] font-bold border transition-all ${
+                              durationUnit === 'minutes' && durationValue === min
+                                ? 'bg-brand-50 border-brand-500 text-brand-700 dark:bg-brand-950 dark:text-brand-300'
+                                : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-slate-300'
+                            }`}
+                          >
+                            {min}m
+                          </button>
+                        ))
+                      )
+                    ) : (
+                      [15, 30, 45, 60, 90].map((min) => (
+                        <button
+                          key={min}
+                          type="button"
+                          onClick={() => {
+                            setDurationUnit('minutes');
+                            setDurationValue(min);
+                          }}
+                          className={`px-2 py-0.5 rounded-md text-[10px] font-bold border transition-all ${
+                            durationUnit === 'minutes' && durationValue === min
+                              ? 'bg-brand-50 border-brand-500 text-brand-700 dark:bg-brand-950 dark:text-brand-300'
+                              : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-slate-300'
+                          }`}
+                        >
+                          {min}m
+                        </button>
+                      ))
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
