@@ -20,14 +20,14 @@ export const playNotificationChime = () => {
     osc.frequency.setValueAtTime(587.33, ctx.currentTime); // D5
     osc.frequency.setValueAtTime(880.0, ctx.currentTime + 0.08); // A5
 
-    gain.gain.setValueAtTime(0.15, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.35);
+    gain.gain.setValueAtTime(0.18, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
 
     osc.connect(gain);
     gain.connect(ctx.destination);
 
     osc.start();
-    osc.stop(ctx.currentTime + 0.35);
+    osc.stop(ctx.currentTime + 0.4);
   } catch (err) {
     console.debug('Audio chime could not play:', err);
   }
@@ -35,24 +35,58 @@ export const playNotificationChime = () => {
 
 /**
  * Trigger native browser System Web Push Notification
+ * Fully supports Smartphone Mobile Chrome (Android via Service Worker) and Desktop
  */
-export const triggerSystemWebPush = (
+export const triggerSystemWebPush = async (
   title: string,
   body: string,
   linkUrl?: string | null
 ) => {
+  // 1. Play sound
   playNotificationChime();
 
-  if (!('Notification' in window)) {
+  // 2. Vibrate smartphone if supported
+  if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+    try {
+      navigator.vibrate([200, 100, 200]);
+    } catch (e) {
+      // ignore
+    }
+  }
+
+  if (typeof window === 'undefined' || !('Notification' in window)) {
     return;
   }
 
   if (Notification.permission === 'granted') {
+    // 3. Preferred approach for Smartphones (Android Chrome enforces ServiceWorkerRegistration.showNotification)
+    if ('serviceWorker' in navigator) {
+      try {
+        const registration = await navigator.serviceWorker.ready;
+        if (registration && 'showNotification' in registration) {
+          await registration.showNotification(`Elite_Classes: ${title}`, {
+            body,
+            icon: '/favicon.svg',
+            badge: '/favicon.svg',
+            vibrate: [200, 100, 200],
+            tag: `elite-${Date.now()}`,
+            data: {
+              url: linkUrl || '/dashboard',
+            },
+          } as any);
+          return;
+        }
+      } catch (swError) {
+        console.warn('Smartphone service worker push error, falling back to window.Notification:', swError);
+      }
+    }
+
+    // 4. Desktop browser fallback
     try {
       const notif = new Notification(`Elite_Classes: ${title}`, {
         body,
-        icon: '/vite.svg',
-        badge: '/vite.svg',
+        icon: '/favicon.svg',
+        badge: '/favicon.svg',
         tag: `elite-${Date.now()}`,
       });
 
@@ -73,15 +107,16 @@ export const triggerSystemWebPush = (
  * Request System Web Push Notification permission from the browser
  */
 export const requestWebPushPermission = async (): Promise<NotificationPermission> => {
-  if (!('Notification' in window)) {
+  if (typeof window === 'undefined' || !('Notification' in window)) {
     return 'denied';
   }
   try {
     const permission = await Notification.requestPermission();
     if (permission === 'granted') {
-      triggerSystemWebPush(
+      await triggerSystemWebPush(
         'System Push Notifications Enabled!',
-        'You will now receive instant alerts for new exams and test results on this device.'
+        'You will now receive instant alerts on this device for upcoming exams and results.',
+        '/dashboard'
       );
     }
     return permission;
@@ -136,8 +171,12 @@ export const sendClassNotification = async ({
     throw error;
   }
 
-  // Also trigger local push for preview if granted
-  triggerSystemWebPush(`[Sent to Class ${targetClass === 'all' ? 'All' : targetClass}] ${title}`, message, linkUrl);
+  // Also trigger local push preview on sender's device
+  await triggerSystemWebPush(
+    `[Sent to Class ${targetClass === 'all' ? 'All' : targetClass}] ${title}`,
+    message,
+    linkUrl
+  );
 
   return data;
 };

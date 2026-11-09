@@ -9,7 +9,8 @@ import {
   Radio, 
   AlertTriangle,
   Award,
-  BookOpen
+  BookOpen,
+  X
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { supabase } from '../../lib/supabase';
@@ -30,6 +31,7 @@ export const NotificationBell: React.FC = () => {
     typeof window !== 'undefined' && 'Notification' in window ? Notification.permission : 'default'
   );
   const [unreadCount, setUnreadCount] = useState(0);
+  const [activeToast, setActiveToast] = useState<SystemNotification | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
 
@@ -95,6 +97,12 @@ export const NotificationBell: React.FC = () => {
 
             setNotifications((prev) => [item, ...prev]);
             setUnreadCount((c) => c + 1);
+
+            // Pop up mobile & desktop in-app alert banner
+            setActiveToast(item);
+            setTimeout(() => {
+              setActiveToast((current) => (current?.id === item.id ? null : current));
+            }, 8000);
           }
         }
       )
@@ -272,6 +280,45 @@ export const NotificationBell: React.FC = () => {
             Realtime System Push Notifications • Elite_Classes
           </div>
 
+        </div>
+      )}
+
+      {/* Realtime In-App Floating Push Alert Banner (Optimized for Smartphones & Desktop) */}
+      {activeToast && (
+        <div className="fixed top-3 left-3 right-3 sm:left-auto sm:right-6 sm:w-96 z-50 p-4 rounded-3xl bg-slate-900 text-white shadow-2xl border border-brand-500/80 animate-in slide-in-from-top-4 duration-200">
+          <div className="flex items-start gap-3">
+            <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-brand-600 text-white shadow-md">
+              <Radio className="h-5 w-5 animate-pulse" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center justify-between gap-1 mb-1">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-brand-400">
+                  {activeToast.target_class === 'all' ? 'All Classes' : `Class ${activeToast.target_class}`} Alert
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setActiveToast(null)}
+                  className="rounded-full p-1 text-slate-400 hover:text-white"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+              <h4 className="text-xs font-black truncate">{activeToast.title}</h4>
+              <p className="mt-0.5 text-[11px] text-slate-300 line-clamp-2 leading-relaxed">
+                {activeToast.message}
+              </p>
+              {activeToast.link_url && (
+                <button
+                  type="button"
+                  onClick={() => handleItemClick(activeToast)}
+                  className="mt-2.5 inline-flex items-center gap-1.5 rounded-xl bg-brand-600 px-3 py-1.5 text-xs font-bold text-white shadow-sm hover:bg-brand-500 transition-colors"
+                >
+                  <span>Open Now</span>
+                  <ExternalLink className="h-3 w-3" />
+                </button>
+              )}
+            </div>
+          </div>
         </div>
       )}
     </div>
