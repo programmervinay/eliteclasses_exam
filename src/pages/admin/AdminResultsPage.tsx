@@ -40,8 +40,28 @@ export const AdminResultsPage: React.FC = () => {
           .select('*, student:profiles(*), exam:exams(*, subject:subjects(*))')
           .order('created_at', { ascending: false });
 
-        if (resErr) throw resErr;
-        setResults((resData || []) as ExamResult[]);
+        if (!resErr && resData && resData.length > 0) {
+          setResults(resData as ExamResult[]);
+        } else {
+          // Robust fallback: fetch raw results and manually link profiles & exams
+          const { data: rawResults } = await supabase
+            .from('results')
+            .select('*')
+            .order('created_at', { ascending: false });
+
+          const { data: profiles } = await supabase.from('profiles').select('*');
+          const { data: allExams } = await supabase.from('exams').select('*, subject:subjects(*)');
+
+          const profileMap = new Map((profiles || []).map((p: any) => [p.id, p]));
+          const examMap = new Map((allExams || []).map((e: any) => [e.id, e]));
+
+          const enriched = (rawResults || []).map((r: any) => ({
+            ...r,
+            student: profileMap.get(r.student_id),
+            exam: examMap.get(r.exam_id),
+          }));
+          setResults(enriched as ExamResult[]);
+        }
       } catch (err) {
         console.error('Error fetching results:', err);
       } finally {

@@ -47,20 +47,56 @@ export const AdminDashboard: React.FC = () => {
       if (exData) setExams(exData as Exam[]);
 
       // 3. Fetch Results
-      const { data: resData } = await supabase
+      const { data: resData, error: resErr } = await supabase
         .from('results')
         .select('*, student:profiles(*), exam:exams(*)')
         .order('created_at', { ascending: false })
         .limit(10);
-      if (resData) setResults(resData as ExamResult[]);
+
+      if (!resErr && resData && resData.length > 0) {
+        setResults(resData as ExamResult[]);
+      } else {
+        const { data: rawRes } = await supabase
+          .from('results')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .limit(10);
+
+        const pMap = new Map((stData || []).map((p: any) => [p.id, p]));
+        const eMap = new Map((exData || []).map((e: any) => [e.id, e]));
+        const enriched = (rawRes || []).map((r: any) => ({
+          ...r,
+          student: pMap.get(r.student_id),
+          exam: eMap.get(r.exam_id),
+        }));
+        setResults(enriched as ExamResult[]);
+      }
 
       // 4. Fetch Suspicious Events count
-      const { data: spData } = await supabase
+      const { data: spData, error: spErr } = await supabase
         .from('suspicious_events')
         .select('*, student:profiles(*), exam:exams(*)')
         .order('occurred_at', { ascending: false })
         .limit(5);
-      if (spData) setSuspiciousEvents(spData as SuspiciousEvent[]);
+
+      if (!spErr && spData && spData.length > 0) {
+        setSuspiciousEvents(spData as SuspiciousEvent[]);
+      } else {
+        const { data: rawSp } = await supabase
+          .from('suspicious_events')
+          .select('*')
+          .order('occurred_at', { ascending: false })
+          .limit(5);
+
+        const pMap = new Map((stData || []).map((p: any) => [p.id, p]));
+        const eMap = new Map((exData || []).map((e: any) => [e.id, e]));
+        const enrichedSp = (rawSp || []).map((s: any) => ({
+          ...s,
+          student: pMap.get(s.student_id),
+          exam: eMap.get(s.exam_id),
+        }));
+        setSuspiciousEvents(enrichedSp as SuspiciousEvent[]);
+      }
     } catch (err) {
       console.error('Error loading admin dashboard:', err);
     } finally {

@@ -39,7 +39,7 @@ export const AdminExamsPage: React.FC = () => {
     try {
       const { data, error } = await supabase
         .from('exams')
-        .select('*, subject:subjects(*), questions(count)')
+        .select('*, subject:subjects(*), questions(count), results(count)')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -215,6 +215,7 @@ export const AdminExamsPage: React.FC = () => {
                   {filteredExams.map((exam) => {
                     const isPublished = exam.status === 'published';
                     const qCount = (exam as any).questions?.[0]?.count || 0;
+                    const subCount = (exam as any).results?.[0]?.count || 0;
                     const isSingleAttempt = (exam.max_attempts || 1) === 1;
 
                     return (
@@ -223,9 +224,21 @@ export const AdminExamsPage: React.FC = () => {
                           <span className="font-bold text-slate-900 dark:text-white block">
                             {exam.title}
                           </span>
-                          <span className="text-[11px] text-slate-400">
-                            {qCount} Questions • Timer: {exam.timer_mode}
-                          </span>
+                          <div className="flex items-center gap-2 mt-0.5">
+                            <span className="text-[11px] text-slate-400">
+                              {qCount} Questions • Timer: {exam.timer_mode}
+                            </span>
+                            {subCount > 0 ? (
+                              <Link
+                                to={`/admin/results?examId=${exam.id}`}
+                                className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300 hover:underline"
+                              >
+                                {subCount} {subCount === 1 ? 'submission' : 'submissions'}
+                              </Link>
+                            ) : (
+                              <span className="text-[10px] text-slate-400">0 submissions</span>
+                            )}
+                          </div>
                         </td>
                         <td className="p-4">
                           <span className="font-semibold text-slate-700 dark:text-slate-300">
