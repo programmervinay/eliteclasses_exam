@@ -13,11 +13,13 @@ import {
   BarChart2,
   Share2,
   FileText,
-  RotateCcw
+  RotateCcw,
+  Bell
 } from 'lucide-react';
 import { supabase, APP_CONFIG } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
 import { LoadingSpinner } from '../../components/common/LoadingSpinner';
+import { requestWebPushPermission } from '../../services/notificationService';
 import type { Exam, Attempt, ExamResult, Subject } from '../../types/database';
 
 export const StudentDashboard: React.FC = () => {
@@ -168,7 +170,21 @@ export const StudentDashboard: React.FC = () => {
             </p>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2.5">
+            {typeof window !== 'undefined' && 'Notification' in window && Notification.permission !== 'granted' && (
+              <button
+                type="button"
+                onClick={async () => {
+                  await requestWebPushPermission();
+                }}
+                className="inline-flex items-center gap-1.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 px-3.5 py-2.5 text-xs font-bold transition-all shadow-md shadow-amber-950/20"
+                title="Enable browser system push notifications"
+              >
+                <Bell className="h-4 w-4" />
+                <span>Enable Push Alerts</span>
+              </button>
+            )}
+
             <Link
               to="/analytics"
               className="inline-flex items-center gap-2 rounded-xl bg-white/10 hover:bg-white/20 backdrop-blur-md px-4 py-2.5 text-xs font-bold text-white border border-white/20 transition-all"

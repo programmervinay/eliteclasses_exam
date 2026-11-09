@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Save, AlertCircle } from 'lucide-react';
+import { X, Save, AlertCircle, ShieldCheck, RotateCcw } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import type { Exam, StudentClass, TimerMode, NavigationMode, ExamStatus, Subject } from '../../types/database';
 
@@ -355,10 +355,13 @@ export const ExamFormModal: React.FC<ExamFormModalProps> = ({
                   onChange={() => setMaxAttempts(1)}
                   className="mt-0.5 text-brand-600 focus:ring-brand-500"
                 />
-                <div>
-                  <span className="block text-xs font-bold text-slate-900 dark:text-white">
-                    Strict 1-Time Attempt
-                  </span>
+                <div className="flex-1">
+                  <div className="flex items-center gap-1.5">
+                    <ShieldCheck className="h-3.5 w-3.5 text-slate-500" />
+                    <span className="block text-xs font-bold text-slate-900 dark:text-white">
+                      Strict 1-Time Attempt
+                    </span>
+                  </div>
                   <span className="text-[10px] text-slate-500 leading-tight block mt-0.5">
                     Student can attempt only once. Cannot reattempt after submission.
                   </span>
@@ -377,10 +380,13 @@ export const ExamFormModal: React.FC<ExamFormModalProps> = ({
                   onChange={() => setMaxAttempts(3)}
                   className="mt-0.5 text-brand-600 focus:ring-brand-500"
                 />
-                <div>
-                  <span className="block text-xs font-bold text-slate-900 dark:text-white">
-                    Allow Quiz Reattempt
-                  </span>
+                <div className="flex-1">
+                  <div className="flex items-center gap-1.5">
+                    <RotateCcw className="h-3.5 w-3.5 text-brand-600 dark:text-brand-400" />
+                    <span className="block text-xs font-bold text-slate-900 dark:text-white">
+                      Allow Quiz Reattempt
+                    </span>
+                  </div>
                   <span className="text-[10px] text-slate-500 leading-tight block mt-0.5">
                     Student can retake the quiz to improve score and practice.
                   </span>

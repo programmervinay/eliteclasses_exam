@@ -17,6 +17,7 @@ import {
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import { APP_CONFIG } from '../../lib/supabase';
+import { NotificationBell } from './NotificationBell';
 
 export const Navbar: React.FC = () => {
   const { user, profile, isAdmin, logout } = useAuth();
@@ -162,7 +163,9 @@ export const Navbar: React.FC = () => {
         </nav>
 
         {/* Right side Actions (Theme toggle + Profile/Login) */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
+          <NotificationBell />
+
           <button
             onClick={toggleTheme}
             aria-label="Toggle theme"

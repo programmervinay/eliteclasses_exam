@@ -189,3 +189,17 @@ export interface ReviewQuestionItem {
   is_answered: boolean;
   correct_option_ids: string[];
 }
+
+export type NotificationType = 'exam' | 'reminder' | 'urgent' | 'result' | 'general';
+
+export interface SystemNotification {
+  id: string;
+  title: string;
+  message: string;
+  notification_type: NotificationType;
+  target_class: 'all' | StudentClass;
+  link_url?: string | null;
+  is_read: boolean;
+  created_at: string;
+}
+

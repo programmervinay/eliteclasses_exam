@@ -7,15 +7,17 @@ import {
   HelpCircle, 
   Edit, 
   Trash2, 
-  CheckCircle, 
-  XCircle, 
   Filter,
-  Eye,
-  AlertCircle
+  Radio,
+  Bell,
+  ShieldCheck,
+  RotateCcw,
+  Sparkles
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { AdminSidebar } from '../../components/admin/AdminSidebar';
 import { ExamFormModal } from '../../components/admin/ExamFormModal';
+import { SendClassNotificationModal } from '../../components/admin/SendClassNotificationModal';
 import { LoadingSpinner } from '../../components/common/LoadingSpinner';
 import type { Exam, StudentClass, ExamStatus } from '../../types/database';
 
@@ -27,6 +29,10 @@ export const AdminExamsPage: React.FC = () => {
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [examToEdit, setExamToEdit] = useState<Exam | null>(null);
+
+  // Class Notification Modal state
+  const [isNotifModalOpen, setIsNotifModalOpen] = useState(false);
+  const [selectedExamForNotif, setSelectedExamForNotif] = useState<Exam | null>(null);
 
   const fetchExams = async () => {
     setLoading(true);
@@ -63,6 +69,21 @@ export const AdminExamsPage: React.FC = () => {
     }
   };
 
+  const handleToggleAttemptPolicy = async (exam: Exam) => {
+    // Toggle between strict 1-time attempt and allow reattempts (3 attempts default)
+    const nextAttempts = (exam.max_attempts || 1) === 1 ? 3 : 1;
+    try {
+      const { error } = await supabase
+        .from('exams')
+        .update({ max_attempts: nextAttempts, updated_at: new Date().toISOString() })
+        .eq('id', exam.id);
+      if (error) throw error;
+      fetchExams();
+    } catch (err) {
+      console.error('Error toggling attempt policy:', err);
+    }
+  };
+
   const handleDeleteExam = async (examId: string) => {
     if (!window.confirm('Are you sure you want to delete this examination? All student attempts and questions for this test will be removed.')) {
       return;
@@ -96,20 +117,36 @@ export const AdminExamsPage: React.FC = () => {
               Manage Examinations
             </h1>
             <p className="text-xs text-slate-500 mt-0.5">
-              Create, edit, schedule, and publish examinations for Classes 6th to 10th
+              Create, edit, schedule, configure reattempt rules, and broadcast push notifications to students
             </p>
           </div>
 
-          <button
-            onClick={() => {
-              setExamToEdit(null);
-              setIsModalOpen(true);
-            }}
-            className="inline-flex items-center gap-2 rounded-2xl bg-brand-600 px-5 py-2.5 text-xs font-bold text-white shadow-md shadow-brand-500/25 hover:bg-brand-700 transition-all self-start sm:self-auto"
-          >
-            <Plus className="h-4 w-4" />
-            <span>Create New Exam</span>
-          </button>
+          <div className="flex flex-wrap items-center gap-2.5 self-start sm:self-auto">
+            {/* Send Class Notification Button */}
+            <button
+              onClick={() => {
+                setSelectedExamForNotif(null);
+                setIsNotifModalOpen(true);
+              }}
+              className="inline-flex items-center gap-2 rounded-2xl bg-indigo-600 px-4 py-2.5 text-xs font-bold text-white shadow-md shadow-indigo-500/25 hover:bg-indigo-700 transition-all"
+              title="Broadcast Web Push Notification to a particular class"
+            >
+              <Radio className="h-4 w-4 animate-pulse" />
+              <span>Send Class Push Notification</span>
+            </button>
+
+            {/* Create New Exam Button */}
+            <button
+              onClick={() => {
+                setExamToEdit(null);
+                setIsModalOpen(true);
+              }}
+              className="inline-flex items-center gap-2 rounded-2xl bg-brand-600 px-4.5 py-2.5 text-xs font-bold text-white shadow-md shadow-brand-500/25 hover:bg-brand-700 transition-all"
+            >
+              <Plus className="h-4 w-4" />
+              <span>Create New Exam</span>
+            </button>
+          </div>
         </div>
 
         {/* Filter Controls */}
@@ -169,6 +206,7 @@ export const AdminExamsPage: React.FC = () => {
                     <th className="p-4">Subject</th>
                     <th className="p-4">Duration</th>
                     <th className="p-4">Marks</th>
+                    <th className="p-4">Attempt Policy</th>
                     <th className="p-4">Status</th>
                     <th className="p-4 text-right">Actions</th>
                   </tr>
@@ -177,6 +215,7 @@ export const AdminExamsPage: React.FC = () => {
                   {filteredExams.map((exam) => {
                     const isPublished = exam.status === 'published';
                     const qCount = (exam as any).questions?.[0]?.count || 0;
+                    const isSingleAttempt = (exam.max_attempts || 1) === 1;
 
                     return (
                       <tr key={exam.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30">
@@ -185,7 +224,7 @@ export const AdminExamsPage: React.FC = () => {
                             {exam.title}
                           </span>
                           <span className="text-[11px] text-slate-400">
-                            {qCount} Questions • Timer: {exam.timer_mode} • {exam.max_attempts === 1 ? '1 Attempt Only' : exam.max_attempts >= 100 ? 'Unlimited Reattempts' : `${exam.max_attempts} Attempts`}
+                            {qCount} Questions • Timer: {exam.timer_mode}
                           </span>
                         </td>
                         <td className="p-4">
@@ -202,6 +241,33 @@ export const AdminExamsPage: React.FC = () => {
                         <td className="p-4 font-mono font-bold text-slate-700 dark:text-slate-300">
                           {exam.total_marks}
                         </td>
+
+                        {/* Attempt Policy Quick-Toggle Column */}
+                        <td className="p-4">
+                          {isSingleAttempt ? (
+                            <button
+                              type="button"
+                              onClick={() => handleToggleAttemptPolicy(exam)}
+                              title="Strict 1 Attempt. Click to switch to Allow Reattempts"
+                              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-[10px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-brand-50 hover:text-brand-700 dark:hover:bg-brand-950 transition-colors border border-slate-200/60 dark:border-slate-700"
+                            >
+                              <ShieldCheck className="h-3.5 w-3.5 text-slate-500" />
+                              <span>1 Attempt Only</span>
+                            </button>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => handleToggleAttemptPolicy(exam)}
+                              title="Reattempt Allowed. Click to switch to Strict 1 Attempt"
+                              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-[10px] font-bold bg-brand-50 dark:bg-brand-950/70 text-brand-700 dark:text-brand-300 hover:bg-brand-100 transition-colors border border-brand-200 dark:border-brand-900"
+                            >
+                              <RotateCcw className="h-3.5 w-3.5 text-brand-600 dark:text-brand-400" />
+                              <span>Reattempt (x{exam.max_attempts >= 100 ? '∞' : exam.max_attempts})</span>
+                            </button>
+                          )}
+                        </td>
+
+                        {/* Status Toggle */}
                         <td className="p-4">
                           <button
                             type="button"
@@ -216,8 +282,23 @@ export const AdminExamsPage: React.FC = () => {
                             {exam.status}
                           </button>
                         </td>
+
+                        {/* Actions */}
                         <td className="p-4 text-right">
                           <div className="flex items-center justify-end gap-1">
+                            {/* Notify Class Button */}
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setSelectedExamForNotif(exam);
+                                setIsNotifModalOpen(true);
+                              }}
+                              className="p-1.5 text-indigo-600 hover:bg-indigo-50 rounded-lg dark:hover:bg-indigo-950"
+                              title={`Broadcast Push Notification to Class ${exam.class}`}
+                            >
+                              <Bell className="h-4 w-4" />
+                            </button>
+
                             <Link
                               to={`/admin/questions?examId=${exam.id}`}
                               className="p-1.5 text-brand-600 hover:bg-brand-50 rounded-lg dark:hover:bg-brand-950"
@@ -225,6 +306,7 @@ export const AdminExamsPage: React.FC = () => {
                             >
                               <HelpCircle className="h-4 w-4" />
                             </Link>
+
                             <button
                               type="button"
                               onClick={() => {
@@ -232,10 +314,11 @@ export const AdminExamsPage: React.FC = () => {
                                 setIsModalOpen(true);
                               }}
                               className="p-1.5 text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
-                              title="Edit Settings"
+                              title="Edit Settings & Attempt Policy"
                             >
                               <Edit className="h-4 w-4" />
                             </button>
+
                             <button
                               type="button"
                               onClick={() => handleDeleteExam(exam.id)}
@@ -261,6 +344,14 @@ export const AdminExamsPage: React.FC = () => {
           onClose={() => setIsModalOpen(false)}
           onSaved={fetchExams}
           examToEdit={examToEdit}
+        />
+
+        {/* Modal for broadcasting push notification to particular class */}
+        <SendClassNotificationModal
+          isOpen={isNotifModalOpen}
+          onClose={() => setIsNotifModalOpen(false)}
+          exams={exams}
+          preselectedExam={selectedExamForNotif}
         />
 
       </main>
