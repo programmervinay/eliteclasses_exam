@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import type { User, Session } from '@supabase/supabase-js';
-import { supabase } from '../lib/supabase';
+import { supabase, RECOVERY_STORAGE_KEY } from '../lib/supabase';
 import type { Profile, StudentClass, UserRole } from '../types/database';
 
 interface RegisterData {
@@ -29,8 +29,6 @@ interface AuthContextType {
   clearPasswordRecovery: () => void;
   refreshProfile: () => Promise<void>;
 }
-
-const RECOVERY_STORAGE_KEY = 'elite_password_recovery';
 
 const hasRecoveryUrlParams = () => {
   if (typeof window === 'undefined') return false;
