@@ -226,9 +226,21 @@ export const AdminQuestionsPage: React.FC = () => {
                     </div>
                   </div>
 
-                  <p className="text-sm font-semibold text-slate-900 dark:text-white mb-3">
-                    {q.question_text}
-                  </p>
+                  {q.question_text && (
+                    <p className="text-sm font-semibold text-slate-900 dark:text-white mb-3">
+                      {q.question_text}
+                    </p>
+                  )}
+
+                  {q.image_url && (
+                    <div className="mb-3 inline-block rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 p-2">
+                      <img
+                        src={q.image_url}
+                        alt={`Question ${idx + 1} Diagram`}
+                        className="max-h-48 w-auto max-w-full rounded-xl object-contain"
+                      />
+                    </div>
+                  )}
 
                   {/* Options List */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-3">
@@ -239,16 +251,25 @@ export const AdminQuestionsPage: React.FC = () => {
                       return (
                         <div
                           key={opt.id}
-                          className={`flex items-center gap-2.5 p-3 rounded-2xl border text-xs ${
+                          className={`flex items-start gap-2.5 p-3 rounded-2xl border text-xs ${
                             isCorrect
                               ? 'border-emerald-500 bg-emerald-50/60 dark:bg-emerald-950/40 text-emerald-900 dark:text-emerald-200 font-semibold'
                               : 'border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/40 text-slate-600 dark:text-slate-300'
                           }`}
                         >
-                          <span className="font-bold">{label}.</span>
-                          <span className="flex-1">{opt.option_text}</span>
+                          <span className="font-bold pt-0.5">{label}.</span>
+                          <div className="flex-1 min-w-0 space-y-1.5">
+                            {opt.option_text && <span className="block">{opt.option_text}</span>}
+                            {opt.image_url && (
+                              <img
+                                src={opt.image_url}
+                                alt={`Option ${label}`}
+                                className="max-h-24 w-auto max-w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-0.5 object-contain"
+                              />
+                            )}
+                          </div>
                           {isCorrect && (
-                            <span className="text-[10px] font-bold text-emerald-600 flex items-center gap-1">
+                            <span className="text-[10px] font-bold text-emerald-600 flex items-center gap-1 shrink-0 pt-0.5">
                               <CheckCircle2 className="h-3.5 w-3.5" /> Correct
                             </span>
                           )}

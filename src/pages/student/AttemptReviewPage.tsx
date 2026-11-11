@@ -147,13 +147,19 @@ export const AttemptReviewPage: React.FC = () => {
               </div>
 
               {/* Question Text */}
-              <h3 className="text-base font-bold text-slate-900 dark:text-white leading-relaxed mb-4">
-                {q.question_text}
-              </h3>
+              {q.question_text && (
+                <h3 className="text-base font-bold text-slate-900 dark:text-white leading-relaxed mb-4">
+                  {q.question_text}
+                </h3>
+              )}
 
               {q.image_url && (
-                <div className="mb-4 max-h-60 overflow-hidden rounded-xl border border-slate-200">
-                  <img src={q.image_url} alt="Question Diagram" className="object-contain" />
+                <div className="mb-4 inline-block w-full rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 p-2">
+                  <img
+                    src={q.image_url}
+                    alt="Question Diagram"
+                    className="mx-auto max-h-64 w-auto max-w-full rounded-xl object-contain"
+                  />
                 </div>
               )}
 
@@ -178,7 +184,16 @@ export const AttemptReviewPage: React.FC = () => {
                       className={`flex items-start gap-3 p-3.5 rounded-2xl border-2 text-xs sm:text-sm ${optClass}`}
                     >
                       <span className="font-bold shrink-0">{label}.</span>
-                      <span className="flex-1">{opt.text}</span>
+                      <div className="flex-1 min-w-0 space-y-2">
+                        {opt.text && <span className="block">{opt.text}</span>}
+                        {opt.image_url && (
+                          <img
+                            src={opt.image_url}
+                            alt={`Option ${label}`}
+                            className="max-h-36 w-auto max-w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 p-1 object-contain"
+                          />
+                        )}
+                      </div>
                       {isRightAnswer && (
                         <span className="shrink-0 text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1 text-xs">
                           <CheckCircle2 className="h-4 w-4" /> Correct Answer
