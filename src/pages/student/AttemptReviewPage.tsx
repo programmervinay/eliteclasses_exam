@@ -10,6 +10,7 @@ import {
   Lightbulb
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
+import { seededShuffle } from '../../utils/shuffle';
 import { LoadingSpinner } from '../../components/common/LoadingSpinner';
 import type { ReviewQuestionItem, Exam } from '../../types/database';
 
@@ -40,7 +41,18 @@ export const AttemptReviewPage: React.FC = () => {
         });
 
         if (reviewErr) throw reviewErr;
-        setQuestions((reviewData || []) as ReviewQuestionItem[]);
+        const canonicalReview = [...((reviewData || []) as ReviewQuestionItem[])]
+          .sort((a, b) => a.display_order - b.display_order || a.question_id.localeCompare(b.question_id))
+          .map((q) => {
+            const canonicalOpts = [...(q.options || [])].sort(
+              (a, b) => a.display_order - b.display_order || a.id.localeCompare(b.id)
+            );
+            return {
+              ...q,
+              options: seededShuffle(canonicalOpts, `${attemptId}:options:${q.question_id}`),
+            };
+          });
+        setQuestions(seededShuffle(canonicalReview, `${attemptId}:questions`));
       } catch (err: any) {
         console.error('Review fetch error:', err);
         setErrorMsg(err.message || 'Unable to load examination answer review.');

@@ -11,6 +11,7 @@ import {
   Cloud
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
+import { seededShuffle } from '../../utils/shuffle';
 import { useAuth } from '../../context/AuthContext';
 import { LoadingSpinner } from '../../components/common/LoadingSpinner';
 import { Watermark } from '../../components/common/Watermark';
@@ -94,11 +95,21 @@ export const ExamSessionPage: React.FC = () => {
           .order('display_order', { ascending: true });
         if (qErr) throw qErr;
 
-        // Sort options
-        const formattedQuestions = (questionsData as Question[]).map((q) => ({
-          ...q,
-          options: (q.options || []).sort((a, b) => a.display_order - b.display_order),
-        }));
+        // Normalize canonical order before deterministic per-attempt shuffling
+        // so every new attempt/reattempt jumbles questions & options while refreshes keep the same order.
+        const canonicalQuestions = [...(questionsData as Question[])]
+          .sort((a, b) => a.display_order - b.display_order || a.id.localeCompare(b.id))
+          .map((q) => {
+            const canonicalOptions = [...(q.options || [])].sort(
+              (a, b) => a.display_order - b.display_order || a.id.localeCompare(b.id)
+            );
+            return {
+              ...q,
+              options: seededShuffle(canonicalOptions, `${attemptId}:options:${q.id}`),
+            };
+          });
+
+        const formattedQuestions = seededShuffle(canonicalQuestions, `${attemptId}:questions`);
         setQuestions(formattedQuestions);
 
         // Fetch previously saved answers for this attempt (session recovery)
