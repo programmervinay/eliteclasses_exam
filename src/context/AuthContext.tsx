@@ -20,12 +20,25 @@ interface AuthContextType {
   profile: Profile | null;
   loading: boolean;
   isAdmin: boolean;
+  isPasswordRecovery: boolean;
   login: (email: string, password: string) => Promise<{ error: Error | null }>;
   register: (data: RegisterData) => Promise<{ error: Error | null }>;
   logout: () => Promise<void>;
   resetPassword: (email: string) => Promise<{ error: Error | null }>;
+  updatePassword: (newPassword: string) => Promise<{ error: Error | null }>;
+  clearPasswordRecovery: () => void;
   refreshProfile: () => Promise<void>;
 }
+
+const RECOVERY_STORAGE_KEY = 'elite_password_recovery';
+
+const hasRecoveryUrlParams = () => {
+  if (typeof window === 'undefined') return false;
+  const hash = window.location.hash || '';
+  const search = window.location.search || '';
+  if (hash.includes('error=') || search.includes('error=')) return false;
+  return hash.includes('type=recovery') || search.includes('type=recovery');
+};
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -34,6 +47,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isPasswordRecovery, setIsPasswordRecovery] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return false;
+    if (hasRecoveryUrlParams()) {
+      sessionStorage.setItem(RECOVERY_STORAGE_KEY, '1');
+      return true;
+    }
+    return sessionStorage.getItem(RECOVERY_STORAGE_KEY) === '1';
+  });
+
+  const clearPasswordRecovery = () => {
+    if (typeof window !== 'undefined') {
+      sessionStorage.removeItem(RECOVERY_STORAGE_KEY);
+    }
+    setIsPasswordRecovery(false);
+  };
 
   const fetchProfile = async (userId: string) => {
     try {
@@ -75,12 +103,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (session?.user) {
         const prof = await fetchProfile(session.user.id);
         setProfile(prof);
+      } else if (!hasRecoveryUrlParams() && !window.location.search.includes('code=')) {
+        clearPasswordRecovery();
       }
       setLoading(false);
     });
 
     // 2. Auth state change listener
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'PASSWORD_RECOVERY') {
+        sessionStorage.setItem(RECOVERY_STORAGE_KEY, '1');
+        setIsPasswordRecovery(true);
+      } else if (event === 'SIGNED_OUT') {
+        clearPasswordRecovery();
+      } else if (event === 'USER_UPDATED') {
+        clearPasswordRecovery();
+      }
+
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
@@ -99,6 +138,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const login = async (email: string, password: string) => {
     try {
+      clearPasswordRecovery();
       const { data, error } = await supabase.auth.signInWithPassword({
         email: email.trim().toLowerCase(),
         password,
@@ -164,6 +204,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const logout = async () => {
+    clearPasswordRecovery();
     await supabase.auth.signOut();
     setUser(null);
     setSession(null);
@@ -176,6 +217,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         redirectTo: `${window.location.origin}/reset-password`,
       });
       if (error) throw error;
+      return { error: null };
+    } catch (err: any) {
+      return { error: err };
+    }
+  };
+
+  const updatePassword = async (newPassword: string) => {
+    try {
+      const { error } = await supabase.auth.updateUser({
+        password: newPassword,
+      });
+      if (error) throw error;
+      clearPasswordRecovery();
       return { error: null };
     } catch (err: any) {
       return { error: err };
@@ -196,10 +250,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         profile,
         loading,
         isAdmin,
+        isPasswordRecovery,
         login,
         register,
         logout,
         resetPassword,
+        updatePassword,
+        clearPasswordRecovery,
         refreshProfile,
       }}
     >

@@ -1,6 +1,6 @@
-import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
-import { AuthProvider } from './context/AuthContext';
+import React, { useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
+import { AuthProvider, useAuth } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { Navbar } from './components/common/Navbar';
 import { Footer } from './components/common/Footer';
@@ -44,11 +44,32 @@ const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   );
 };
 
+const RecoveryRedirectWatcher: React.FC = () => {
+  const { isPasswordRecovery } = useAuth();
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const isRecoveryRoute =
+      location.pathname === '/reset-password' || location.pathname === '/update-password';
+    const hasRecoveryError =
+      window.location.hash.includes('error_code=otp_expired') ||
+      window.location.hash.includes('type=recovery');
+
+    if ((isPasswordRecovery || hasRecoveryError) && !isRecoveryRoute) {
+      navigate(`/reset-password${window.location.search}${window.location.hash}`, { replace: true });
+    }
+  }, [isPasswordRecovery, location.pathname, navigate]);
+
+  return null;
+};
+
 export const App: React.FC = () => {
   return (
     <ThemeProvider>
       <AuthProvider>
         <Router>
+          <RecoveryRedirectWatcher />
           <AppLayout>
             <Routes>
               {/* Public Routes */}
@@ -56,6 +77,7 @@ export const App: React.FC = () => {
               <Route path="/login" element={<LoginPage />} />
               <Route path="/register" element={<RegisterPage />} />
               <Route path="/reset-password" element={<ResetPasswordPage />} />
+              <Route path="/update-password" element={<ResetPasswordPage />} />
 
               {/* Student Protected Routes */}
               <Route
