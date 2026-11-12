@@ -28,6 +28,12 @@ interface AuthContextType {
   updatePassword: (newPassword: string) => Promise<{ error: Error | null }>;
   clearPasswordRecovery: () => void;
   refreshProfile: () => Promise<void>;
+  updateProfile: (data: {
+    fullName?: string;
+    phone?: string;
+    studentClass?: StudentClass;
+    schoolName?: string;
+  }) => Promise<{ error: Error | null }>;
 }
 
 const hasRecoveryUrlParams = () => {
@@ -75,7 +81,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
       
       const prof = data as Profile;
-      if (prof?.full_name?.startsWith('[FRAUD DELETED]') || prof?.school_name === '[ACCOUNT PERMANENTLY TERMINATED BY TEACHER]') {
+      if (prof?.is_blocked || prof?.full_name?.startsWith('[FRAUD DELETED]') || prof?.school_name === '[ACCOUNT PERMANENTLY TERMINATED BY TEACHER]') {
         await supabase.auth.signOut().catch(() => {});
         return null;
       }
@@ -234,6 +240,47 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const updateProfile = async (data: {
+    fullName?: string;
+    phone?: string;
+    studentClass?: StudentClass;
+    schoolName?: string;
+  }) => {
+    try {
+      if (!user) throw new Error('Not logged in');
+
+      const updates: Partial<Profile> = {
+        updated_at: new Date().toISOString(),
+      };
+      if (data.fullName !== undefined) updates.full_name = data.fullName.trim();
+      if (data.phone !== undefined) updates.phone = data.phone.trim();
+      if (data.studentClass !== undefined) updates.class = data.studentClass;
+      if (data.schoolName !== undefined) updates.school_name = data.schoolName.trim() || null;
+
+      const { error } = await supabase
+        .from('profiles')
+        .update(updates)
+        .eq('id', user.id);
+
+      if (error) throw error;
+
+      // Synchronize auth user metadata
+      await supabase.auth.updateUser({
+        data: {
+          ...(data.fullName !== undefined && { full_name: data.fullName.trim() }),
+          ...(data.phone !== undefined && { phone: data.phone.trim() }),
+          ...(data.studentClass !== undefined && { class: data.studentClass }),
+          ...(data.schoolName !== undefined && { school_name: data.schoolName.trim() || null }),
+        },
+      }).catch(() => {});
+
+      await refreshProfile();
+      return { error: null };
+    } catch (err: any) {
+      return { error: err };
+    }
+  };
+
   const isAdmin = Boolean(
     profile?.role === 'admin' ||
     profile?.role === 'teacher' ||
@@ -256,6 +303,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         updatePassword,
         clearPasswordRecovery,
         refreshProfile,
+        updateProfile,
       }}
     >
       {children}

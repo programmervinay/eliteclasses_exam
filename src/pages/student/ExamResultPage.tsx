@@ -11,7 +11,9 @@ import {
   Home, 
   AlertCircle,
   HelpCircle,
-  GraduationCap
+  GraduationCap,
+  Zap,
+  Trophy
 } from 'lucide-react';
 import { supabase, APP_CONFIG } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
@@ -91,6 +93,8 @@ export const ExamResultPage: React.FC = () => {
     year: 'numeric',
   });
 
+  const earnedXp = 50 + Math.round((Number(marksObtained) || 0) * 10) + (Number(percentage) >= 90 ? 50 : Number(percentage) >= 75 ? 25 : Number(percentage) >= 50 ? 15 : 0);
+
   const whatsappMessage = 
     `*Elite_Classes — Examination Result*\n\n` +
     `👤 *Student Name:* ${studentName}\n` +
@@ -154,6 +158,26 @@ export const ExamResultPage: React.FC = () => {
           <div className="mt-2 text-sm font-bold text-slate-700 dark:text-slate-300">
             Score: <span className={isPass ? 'text-emerald-600' : 'text-amber-600'}>{percentage}%</span>
           </div>
+        </div>
+
+        {/* XP Points Award Card */}
+        <div className="my-6 p-4 rounded-3xl bg-gradient-to-r from-amber-500/15 via-yellow-500/10 to-amber-500/15 border border-amber-300 dark:border-amber-800/80 max-w-md mx-auto flex items-center justify-between shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 rounded-2xl bg-amber-500 text-slate-950 font-black shadow-md shadow-amber-500/30">
+              <Zap className="h-5 w-5 fill-slate-950" />
+            </div>
+            <div className="text-left">
+              <span className="text-[10px] uppercase font-bold text-amber-700 dark:text-amber-400 block tracking-wider">Quiz XP Awarded</span>
+              <span className="text-base font-black text-slate-900 dark:text-white">+{earnedXp} XP Points!</span>
+            </div>
+          </div>
+          <Link
+            to="/leaderboard"
+            className="inline-flex items-center gap-1.5 text-xs font-bold px-3.5 py-2 rounded-xl bg-white dark:bg-slate-900 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800 shadow-sm hover:bg-amber-50 dark:hover:bg-slate-800 transition-all"
+          >
+            <Trophy className="h-3.5 w-3.5" />
+            <span>Leaderboard</span>
+          </Link>
         </div>
 
         {/* Detailed Question Stats Grid */}

@@ -9,9 +9,14 @@ import {
   UserX,
   X,
   ShieldAlert,
+  ShieldCheck,
+  Ban,
   Check,
   Copy,
-  Terminal
+  Terminal,
+  Zap,
+  Lock,
+  Unlock
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { AdminSidebar } from '../../components/admin/AdminSidebar';
@@ -31,6 +36,11 @@ export const AdminStudentsPage: React.FC = () => {
   const [accountToDelete, setAccountToDelete] = useState<Profile | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [confirmedFraud, setConfirmedFraud] = useState(false);
+
+  // Block Modal state
+  const [accountToBlock, setAccountToBlock] = useState<Profile | null>(null);
+  const [isBlocking, setIsBlocking] = useState(false);
+
   const [showSqlHelper, setShowSqlHelper] = useState(false);
   const [copiedSql, setCopiedSql] = useState(false);
 
@@ -74,13 +84,42 @@ export const AdminStudentsPage: React.FC = () => {
     }
   };
 
-  // Delete Fraud Student Account
-  const handleDeleteFraudAccount = async () => {
+  // Block / Unblock student
+  const handleToggleBlock = async (student: Profile, shouldBlock: boolean) => {
+    setIsBlocking(true);
+    try {
+      const { error } = await supabase.rpc('admin_block_student', {
+        p_student_id: student.id,
+        p_blocked: shouldBlock,
+      });
+
+      if (error) {
+        // Fallback direct profile update
+        const { error: updErr } = await supabase
+          .from('profiles')
+          .update({ is_blocked: shouldBlock, updated_at: new Date().toISOString() })
+          .eq('id', student.id);
+        if (updErr) throw updErr;
+      }
+
+      setAccountToBlock(null);
+      await fetchStudents();
+      alert(`Student ${student.full_name} has been ${shouldBlock ? 'BLOCKED' : 'UNBLOCKED'}.`);
+    } catch (err: any) {
+      console.error('Error toggling block:', err);
+      alert(`Error: ${err.message || 'Failed to update student status.'}`);
+    } finally {
+      setIsBlocking(false);
+    }
+  };
+
+  // Permanently Delete Student Account
+  const handleDeleteStudentAccount = async () => {
     if (!accountToDelete) return;
     setIsDeleting(true);
 
     try {
-      // 1. Try calling Supabase RPC if configured
+      // 1. Call Supabase RPC
       const { error: rpcError } = await supabase.rpc('admin_delete_student', {
         p_student_id: accountToDelete.id,
       });
@@ -89,12 +128,13 @@ export const AdminStudentsPage: React.FC = () => {
         setAccountToDelete(null);
         setConfirmedFraud(false);
         await fetchStudents();
+        alert(`Account for ${accountToDelete.full_name} and all test records permanently deleted.`);
         return;
       }
 
-      console.warn('RPC deletion unavailable, executing cascaded removal & deactivation:', rpcError);
+      console.warn('RPC deletion fallback:', rpcError);
 
-      // 2. Cascade delete student records
+      // 2. Fallback manual cascade cleanup
       const { data: attempts } = await supabase
         .from('attempts')
         .select('id')
@@ -108,34 +148,12 @@ export const AdminStudentsPage: React.FC = () => {
       await supabase.from('suspicious_events').delete().eq('student_id', accountToDelete.id);
       await supabase.from('results').delete().eq('student_id', accountToDelete.id);
       await supabase.from('attempts').delete().eq('student_id', accountToDelete.id);
-
-      // 3. Try deleting profile directly
-      const { data: deletedProfiles } = await supabase
-        .from('profiles')
-        .delete()
-        .eq('id', accountToDelete.id)
-        .select();
-
-      // If RLS silently ignored DELETE (0 rows affected), deactivate profile via UPDATE
-      if (!deletedProfiles || deletedProfiles.length === 0) {
-        const { error: updateErr } = await supabase
-          .from('profiles')
-          .update({
-            full_name: `[FRAUD DELETED] ${accountToDelete.full_name}`,
-            school_name: '[ACCOUNT PERMANENTLY TERMINATED BY TEACHER]',
-            email: `fraud_${accountToDelete.id.slice(0, 8)}@terminated.local`,
-            phone: '0000000000',
-            updated_at: new Date().toISOString(),
-          })
-          .eq('id', accountToDelete.id);
-
-        if (updateErr) throw updateErr;
-      }
+      await supabase.from('profiles').delete().eq('id', accountToDelete.id);
 
       setAccountToDelete(null);
       setConfirmedFraud(false);
       await fetchStudents();
-      alert(`Account for ${accountToDelete.full_name} has been purged and removed from your website.`);
+      alert(`Account for ${accountToDelete.full_name} has been deleted.`);
     } catch (err: any) {
       console.error('Delete error:', err);
       alert(`Error deleting account: ${err.message || 'Please check permissions.'}`);
@@ -144,28 +162,9 @@ export const AdminStudentsPage: React.FC = () => {
     }
   };
 
-  const sqlSnippet = `-- Optional: Run in Supabase SQL Editor for instant 1-click database RPC
-CREATE OR REPLACE FUNCTION public.admin_delete_student(p_student_id uuid)
-RETURNS jsonb
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = public, auth, pg_temp
-AS $$
-BEGIN
-  IF NOT public.is_admin() THEN
-    RAISE EXCEPTION 'Only administrators can delete accounts';
-  END IF;
-
-  DELETE FROM public.attempt_answers WHERE attempt_id IN (SELECT id FROM public.attempts WHERE student_id = p_student_id);
-  DELETE FROM public.suspicious_events WHERE student_id = p_student_id;
-  DELETE FROM public.results WHERE student_id = p_student_id;
-  DELETE FROM public.attempts WHERE student_id = p_student_id;
-  DELETE FROM public.profiles WHERE id = p_student_id;
-  DELETE FROM auth.users WHERE id = p_student_id;
-
-  RETURN jsonb_build_object('success', true);
-END;
-$$;`;
+  const sqlSnippet = `-- Active RPC Functions in Supabase:
+-- 1. admin_block_student(p_student_id uuid, p_blocked boolean)
+-- 2. admin_delete_student(p_student_id uuid) (hard deletes from auth.users & cascades all records)`;
 
   const handleCopySql = () => {
     navigator.clipboard.writeText(sqlSnippet);
@@ -203,7 +202,7 @@ $$;`;
             <h1 className="text-2xl font-black text-slate-900 dark:text-white flex items-center gap-2">
               <span>Student Accounts</span>
               <span className="text-xs px-2.5 py-0.5 rounded-full bg-brand-50 dark:bg-brand-950 text-brand-600 dark:text-brand-400 font-bold border border-brand-200 dark:border-brand-800">
-                {filteredStudents.length} Active
+                {filteredStudents.length} Total
               </span>
             </h1>
             <p className="text-xs text-slate-500 mt-0.5">
@@ -305,6 +304,8 @@ $$;`;
                     <th className="p-4">Student</th>
                     <th className="p-4">Contact</th>
                     <th className="p-4">Class</th>
+                    <th className="p-4">XP Points</th>
+                    <th className="p-4">Status</th>
                     <th className="p-4">School</th>
                     <th className="p-4">Joined</th>
                     <th className="p-4">Role</th>
@@ -315,9 +316,10 @@ $$;`;
                   {filteredStudents.map((st) => {
                     const isAdmin = st.role === 'admin' || st.role === 'teacher';
                     const isSelf = st.id === user?.id || st.email === 'gitwala.vinay@gmail.com';
+                    const isBlocked = Boolean(st.is_blocked);
 
                     return (
-                      <tr key={st.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30">
+                      <tr key={st.id} className={`hover:bg-slate-50/50 dark:hover:bg-slate-800/30 ${isBlocked ? 'bg-red-50/20 dark:bg-red-950/20' : ''}`}>
                         <td className="p-4">
                           <span className="font-bold text-slate-900 dark:text-white block">
                             {st.full_name}
@@ -341,6 +343,25 @@ $$;`;
                             Class {st.class}
                           </span>
                         </td>
+                        <td className="p-4">
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-amber-50 dark:bg-amber-950/60 font-black text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-900/60">
+                            <Zap className="h-3 w-3 fill-amber-500 text-amber-500" />
+                            <span>{st.xp_points || 0} XP</span>
+                          </span>
+                        </td>
+                        <td className="p-4">
+                          {isBlocked ? (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300 border border-red-300 dark:border-red-800">
+                              <Ban className="h-3 w-3" />
+                              <span>BLOCKED</span>
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                              <Check className="h-3 w-3" />
+                              <span>ACTIVE</span>
+                            </span>
+                          )}
+                        </td>
                         <td className="p-4 text-slate-500">
                           {st.school_name || '—'}
                         </td>
@@ -361,7 +382,7 @@ $$;`;
                           </span>
                         </td>
                         <td className="p-4 text-right">
-                          <div className="inline-flex items-center justify-end gap-1.5">
+                          <div className="inline-flex items-center justify-end gap-1.5 flex-wrap">
                             <button
                               type="button"
                               onClick={() => handleToggleRole(st)}
@@ -371,18 +392,45 @@ $$;`;
                             </button>
 
                             {!isSelf && (
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setAccountToDelete(st);
-                                  setConfirmedFraud(false);
-                                }}
-                                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-xs font-bold text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/40 hover:bg-red-100 dark:hover:bg-red-900/60 border border-red-200 dark:border-red-900 transition-all"
-                                title="Delete Fraud Account"
-                              >
-                                <Trash2 className="h-3.5 w-3.5 shrink-0" />
-                                <span>Delete Fraud</span>
-                              </button>
+                              <>
+                                {/* BLOCK / UNBLOCK BUTTON */}
+                                {isBlocked ? (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleToggleBlock(st, false)}
+                                    disabled={isBlocking}
+                                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-xs font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 border border-emerald-200 dark:border-emerald-800 transition-all"
+                                    title="Unblock Student"
+                                  >
+                                    <ShieldCheck className="h-3.5 w-3.5 shrink-0 text-emerald-600" />
+                                    <span>Unblock</span>
+                                  </button>
+                                ) : (
+                                  <button
+                                    type="button"
+                                    onClick={() => setAccountToBlock(st)}
+                                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-xs font-bold text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/40 hover:bg-amber-100 dark:hover:bg-amber-900/60 border border-amber-200 dark:border-amber-900 transition-all"
+                                    title="Block Student"
+                                  >
+                                    <Ban className="h-3.5 w-3.5 shrink-0 text-amber-600" />
+                                    <span>Block</span>
+                                  </button>
+                                )}
+
+                                {/* DELETE BUTTON */}
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setAccountToDelete(st);
+                                    setConfirmedFraud(false);
+                                  }}
+                                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-xs font-bold text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/40 hover:bg-red-100 dark:hover:bg-red-900/60 border border-red-200 dark:border-red-900 transition-all"
+                                  title="Permanently Delete Student"
+                                >
+                                  <Trash2 className="h-3.5 w-3.5 shrink-0" />
+                                  <span>Delete</span>
+                                </button>
+                              </>
                             )}
                           </div>
                         </td>
@@ -395,7 +443,76 @@ $$;`;
           </div>
         )}
 
-        {/* Delete Fraud Account Confirmation Modal */}
+        {/* Block Confirmation Modal */}
+        {accountToBlock && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-fade-in">
+            <div className="relative w-full max-w-md rounded-3xl bg-white dark:bg-slate-900 p-6 sm:p-8 shadow-2xl border border-amber-200 dark:border-amber-900/60">
+              <button
+                type="button"
+                onClick={() => setAccountToBlock(null)}
+                disabled={isBlocking}
+                className="absolute top-4 right-4 rounded-full p-2 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
+              >
+                <X className="h-5 w-5" />
+              </button>
+
+              <div className="text-center mb-5">
+                <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-100 dark:bg-amber-950/80 text-amber-600 dark:text-amber-400">
+                  <Ban className="h-8 w-8" />
+                </div>
+                <h3 className="text-xl font-black text-slate-900 dark:text-white">
+                  Block Student Account?
+                </h3>
+                <p className="mt-1 text-xs text-slate-500">
+                  This student will be blocked from logging in and taking exams. Their test history will remain safely stored.
+                </p>
+              </div>
+
+              <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80 mb-5 space-y-1.5 text-xs">
+                <div className="flex justify-between">
+                  <span className="text-slate-400 font-semibold">Student Name:</span>
+                  <strong className="text-slate-900 dark:text-white">{accountToBlock.full_name}</strong>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-400 font-semibold">Email:</span>
+                  <span className="font-mono text-slate-700 dark:text-slate-300">{accountToBlock.email}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-400 font-semibold">Class / School:</span>
+                  <span className="text-slate-700 dark:text-slate-300">Class {accountToBlock.class} • {accountToBlock.school_name || 'N/A'}</span>
+                </div>
+              </div>
+
+              <div className="flex gap-2.5">
+                <button
+                  type="button"
+                  onClick={() => setAccountToBlock(null)}
+                  disabled={isBlocking}
+                  className="flex-1 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 py-2.5 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  disabled={isBlocking}
+                  onClick={() => handleToggleBlock(accountToBlock, true)}
+                  className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-xl bg-amber-600 py-2.5 text-xs font-bold text-white shadow-md shadow-amber-600/25 hover:bg-amber-700 transition-all"
+                >
+                  {isBlocking ? (
+                    <span>Blocking...</span>
+                  ) : (
+                    <>
+                      <Ban className="h-3.5 w-3.5" />
+                      <span>Confirm Block</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Delete Student Account Confirmation Modal */}
         {accountToDelete && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-fade-in">
             <div className="relative w-full max-w-md rounded-3xl bg-white dark:bg-slate-900 p-6 sm:p-8 shadow-2xl border border-red-200 dark:border-red-900/60">
@@ -414,10 +531,10 @@ $$;`;
                   <UserX className="h-8 w-8" />
                 </div>
                 <h3 className="text-xl font-black text-slate-900 dark:text-white">
-                  Delete Fraud Account?
+                  Permanently Delete Account?
                 </h3>
                 <p className="mt-1 text-xs text-slate-500">
-                  This action permanently removes this student's account and all associated test records.
+                  This action permanently removes this student's account, login credentials, and all test records from the website and database.
                 </p>
               </div>
 
@@ -448,7 +565,7 @@ $$;`;
                   What will be purged:
                 </p>
                 <ul className="list-disc list-inside text-[11px] space-y-0.5 text-red-700 dark:text-red-300">
-                  <li>Student profile and login authentication</li>
+                  <li>Student login authentication & Supabase credentials</li>
                   <li>All completed exam attempts & answers</li>
                   <li>Scorecards, percentages, and results</li>
                   <li>Proctor logs & anti-cheat records</li>
@@ -464,7 +581,7 @@ $$;`;
                   className="rounded border-slate-300 text-red-600 focus:ring-red-500 mt-0.5 h-4 w-4"
                 />
                 <span className="leading-snug">
-                  I confirm that <strong>{accountToDelete.full_name}</strong> is a fraudulent or illegitimate account and should be permanently purged.
+                  I confirm that <strong>{accountToDelete.full_name}</strong> should be permanently deleted from the database.
                 </span>
               </label>
 
@@ -481,15 +598,15 @@ $$;`;
                 <button
                   type="button"
                   disabled={!confirmedFraud || isDeleting}
-                  onClick={handleDeleteFraudAccount}
+                  onClick={handleDeleteStudentAccount}
                   className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-xl bg-red-600 py-2.5 text-xs font-bold text-white shadow-md shadow-red-600/25 hover:bg-red-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
                 >
                   {isDeleting ? (
-                    <span>Purging Account...</span>
+                    <span>Deleting Account...</span>
                   ) : (
                     <>
                       <Trash2 className="h-3.5 w-3.5" />
-                      <span>Purge Fraud Account</span>
+                      <span>Delete Account</span>
                     </>
                   )}
                 </button>

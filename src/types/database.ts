@@ -24,6 +24,8 @@ export interface Profile {
   class: StudentClass;
   school_name: string | null;
   role: UserRole;
+  is_blocked?: boolean;
+  xp_points?: number;
   created_at: string;
   updated_at: string;
 }

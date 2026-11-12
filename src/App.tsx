@@ -19,6 +19,7 @@ import { ExamSessionPage } from './pages/student/ExamSessionPage';
 import { ExamResultPage } from './pages/student/ExamResultPage';
 import { AttemptReviewPage } from './pages/student/AttemptReviewPage';
 import { StudentAnalyticsPage } from './pages/student/StudentAnalyticsPage';
+import { LeaderboardPage } from './pages/student/LeaderboardPage';
 
 // Admin Pages
 import { AdminDashboard } from './pages/admin/AdminDashboard';
@@ -93,6 +94,14 @@ export const App: React.FC = () => {
                 element={
                   <ProtectedRoute>
                     <StudentAnalyticsPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/leaderboard"
+                element={
+                  <ProtectedRoute>
+                    <LeaderboardPage />
                   </ProtectedRoute>
                 }
               />

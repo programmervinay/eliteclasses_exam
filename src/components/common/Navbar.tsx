@@ -13,7 +13,8 @@ import {
   BookOpen, 
   BarChart2, 
   MessageSquare,
-  Radio
+  Radio,
+  Trophy
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
@@ -125,6 +126,17 @@ export const Navbar: React.FC = () => {
                   >
                     <LayoutDashboard className="h-4 w-4" />
                     Dashboard
+                  </Link>
+                  <Link
+                    to="/leaderboard"
+                    className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                      isActive('/leaderboard')
+                        ? 'bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-400 font-bold'
+                        : 'text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white'
+                    }`}
+                  >
+                    <Trophy className="h-4 w-4 text-amber-500" />
+                    Leaderboard
                   </Link>
                   <Link
                     to="/analytics"
@@ -301,6 +313,13 @@ export const Navbar: React.FC = () => {
                     className="block px-3 py-2 rounded-md text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800"
                   >
                     Student Dashboard
+                  </Link>
+                  <Link
+                    to="/leaderboard"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="block px-3 py-2 rounded-md text-sm font-bold text-amber-600 dark:text-amber-400 hover:bg-slate-100 dark:hover:bg-slate-800"
+                  >
+                    🏆 Student XP Leaderboard
                   </Link>
                   <Link
                     to="/analytics"

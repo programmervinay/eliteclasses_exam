@@ -14,12 +14,17 @@ import {
   Share2,
   FileText,
   RotateCcw,
-  Bell
+  Bell,
+  Zap,
+  Trophy,
+  Edit3
 } from 'lucide-react';
 import { supabase, APP_CONFIG } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
 import { LoadingSpinner } from '../../components/common/LoadingSpinner';
 import { requestWebPushPermission } from '../../services/notificationService';
+import { EditProfileModal } from '../../components/student/EditProfileModal';
+import { getStudentLevel } from './LeaderboardPage';
 import type { Exam, Attempt, ExamResult, Subject } from '../../types/database';
 
 export const StudentDashboard: React.FC = () => {
@@ -31,6 +36,7 @@ export const StudentDashboard: React.FC = () => {
   const [selectedSubject, setSelectedSubject] = useState<string>('all');
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'available' | 'completed' | 'all'>('available');
+  const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
 
   const studentClass = profile?.class || '10th';
 
@@ -185,6 +191,16 @@ export const StudentDashboard: React.FC = () => {
               </button>
             )}
 
+            <button
+              type="button"
+              onClick={() => setIsEditProfileOpen(true)}
+              className="inline-flex items-center gap-1.5 rounded-xl bg-white/20 hover:bg-white/30 backdrop-blur-md px-3.5 py-2.5 text-xs font-bold text-white border border-white/20 transition-all shadow-sm"
+              title="Edit your name, class, or mobile number"
+            >
+              <Edit3 className="h-4 w-4" />
+              <span>Edit Profile</span>
+            </button>
+
             <Link
               to="/analytics"
               className="inline-flex items-center gap-2 rounded-xl bg-white/10 hover:bg-white/20 backdrop-blur-md px-4 py-2.5 text-xs font-bold text-white border border-white/20 transition-all"
@@ -194,6 +210,37 @@ export const StudentDashboard: React.FC = () => {
             </Link>
           </div>
         </div>
+      </div>
+
+      {/* XP Points & Leaderboard Spotlight */}
+      <div className="rounded-3xl bg-gradient-to-r from-amber-500/15 via-indigo-500/10 to-brand-500/15 dark:from-amber-950/40 dark:via-indigo-950/30 dark:to-brand-950/40 border border-amber-200/80 dark:border-amber-800/60 p-5 sm:p-6 mb-8 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-sm">
+        <div className="flex items-center gap-4">
+          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-tr from-amber-500 to-yellow-400 text-slate-950 font-black shadow-lg shadow-amber-500/25 shrink-0">
+            <Zap className="h-7 w-7 fill-slate-950" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white">
+                {profile?.xp_points || 0} XP
+              </span>
+              <span className="text-xs px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-700 dark:text-amber-400 font-bold border border-amber-500/30">
+                Tier: {getStudentLevel(profile?.xp_points || 0).title}
+              </span>
+            </div>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+              Earn +50 XP per quiz + 10 XP per mark scored! Compete on the leaderboard across all classes.
+            </p>
+          </div>
+        </div>
+
+        <Link
+          to="/leaderboard"
+          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-slate-950 font-black text-xs shadow-md shadow-amber-500/20 transition-all shrink-0"
+        >
+          <Trophy className="h-4 w-4 fill-slate-950" />
+          <span>All Classes Leaderboard</span>
+          <ArrowRight className="h-3.5 w-3.5" />
+        </Link>
       </div>
 
       {/* KPI Stats Grid */}
@@ -561,6 +608,12 @@ export const StudentDashboard: React.FC = () => {
           })}
         </div>
       )}
+
+      {/* Edit Profile Modal */}
+      <EditProfileModal
+        isOpen={isEditProfileOpen}
+        onClose={() => setIsEditProfileOpen(false)}
+      />
 
     </div>
   );
