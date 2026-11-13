@@ -60,6 +60,8 @@ export interface Exam {
   allow_review: boolean;
   max_attempts: number;
   instructions: string | null;
+  is_daily_bite?: boolean;
+  exam_type?: 'standard' | 'daily_bite';
   created_by: string | null;
   created_at: string;
   updated_at: string;

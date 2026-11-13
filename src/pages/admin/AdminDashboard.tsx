@@ -256,6 +256,7 @@ export const AdminDashboard: React.FC = () => {
                       <th className="pb-3">Examination</th>
                       <th className="pb-3">Score</th>
                       <th className="pb-3">Status</th>
+                      <th className="pb-3 text-right">Action</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
@@ -281,6 +282,16 @@ export const AdminDashboard: React.FC = () => {
                           }`}>
                             {res.result_status}
                           </span>
+                        </td>
+                        <td className="py-3 text-right">
+                          <Link
+                            to={`/exam/${res.exam_id}/review/${res.attempt_id}`}
+                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-brand-50 hover:bg-brand-100 text-brand-700 dark:bg-brand-950/60 dark:text-brand-300 text-[11px] font-bold transition-all"
+                            title="Review what student marked"
+                          >
+                            <span>Review</span>
+                            <ArrowRight className="h-3 w-3" />
+                          </Link>
                         </td>
                       </tr>
                     ))}

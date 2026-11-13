@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { 
   Award, 
   Download, 
@@ -8,17 +9,32 @@ import {
   CheckCircle2, 
   XCircle, 
   MessageSquare,
-  FileSpreadsheet
+  FileSpreadsheet,
+  X,
+  HelpCircle,
+  Lightbulb,
+  ExternalLink,
+  BookOpen,
+  User,
+  GraduationCap,
+  Loader2,
+  Sparkles
 } from 'lucide-react';
 import { supabase, APP_CONFIG } from '../../lib/supabase';
 import { AdminSidebar } from '../../components/admin/AdminSidebar';
 import { LoadingSpinner } from '../../components/common/LoadingSpinner';
-import type { ExamResult, Exam } from '../../types/database';
+import type { ExamResult, Exam, ReviewQuestionItem } from '../../types/database';
 
 export const AdminResultsPage: React.FC = () => {
   const [results, setResults] = useState<ExamResult[]>([]);
   const [exams, setExams] = useState<Exam[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Review Modal state
+  const [selectedReviewResult, setSelectedReviewResult] = useState<ExamResult | null>(null);
+  const [reviewQuestions, setReviewQuestions] = useState<ReviewQuestionItem[]>([]);
+  const [loadingReview, setLoadingReview] = useState(false);
+  const [reviewFilter, setReviewFilter] = useState<'all' | 'incorrect' | 'correct' | 'unanswered'>('all');
 
   // Filters
   const [selectedExamId, setSelectedExamId] = useState<string>('all');
@@ -71,6 +87,45 @@ export const AdminResultsPage: React.FC = () => {
 
     fetchResultsAndExams();
   }, []);
+
+  const handleOpenReview = async (res: ExamResult) => {
+    setSelectedReviewResult(res);
+    setLoadingReview(true);
+    setReviewFilter('all');
+
+    try {
+      const { data, error } = await supabase.rpc('get_attempt_review', {
+        p_attempt_id: res.attempt_id,
+      });
+
+      if (error) throw error;
+      setReviewQuestions((data || []) as ReviewQuestionItem[]);
+    } catch (err: any) {
+      console.error('Error fetching review data:', err);
+      alert(`Could not load answer review: ${err.message || 'Please try again.'}`);
+    } finally {
+      setLoadingReview(false);
+    }
+  };
+
+  const handleCloseReview = () => {
+    setSelectedReviewResult(null);
+    setReviewQuestions([]);
+  };
+
+  const filteredReviewQuestions = reviewQuestions.filter((q) => {
+    const selected = q.selected_option_ids || [];
+    const correct = q.correct_option_ids || [];
+    const isAnswered = q.is_answered;
+    const isCorrect = isAnswered && 
+      selected.length === correct.length && 
+      selected.every((id) => correct.includes(id));
+
+    if (reviewFilter === 'correct') return isCorrect;
+    if (reviewFilter === 'incorrect') return isAnswered && !isCorrect;
+    if (reviewFilter === 'unanswered') return !isAnswered;
+    return true;
+  });
 
   const exportToCSV = () => {
     if (results.length === 0) return;
@@ -236,6 +291,7 @@ export const AdminResultsPage: React.FC = () => {
                     <th className="p-4">Accuracy</th>
                     <th className="p-4">Status</th>
                     <th className="p-4">Date</th>
+                    <th className="p-4 text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
@@ -293,11 +349,291 @@ export const AdminResultsPage: React.FC = () => {
                             month: 'short',
                           })}
                         </td>
+                        <td className="p-4 text-right">
+                          <button
+                            type="button"
+                            onClick={() => handleOpenReview(r)}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-brand-600 dark:text-brand-400 bg-brand-50 dark:bg-brand-950/60 hover:bg-brand-100 dark:hover:bg-brand-900/60 border border-brand-200 dark:border-brand-800 transition-all shadow-sm"
+                            title="Check what student marked"
+                          >
+                            <Eye className="h-3.5 w-3.5" />
+                            <span>Review Answers</span>
+                          </button>
+                        </td>
                       </tr>
                     );
                   })}
                 </tbody>
               </table>
+            </div>
+          </div>
+        )}
+
+        {/* Admin Student Answer Review Modal */}
+        {selectedReviewResult && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-slate-950/80 backdrop-blur-sm animate-fade-in">
+            <div className="relative w-full max-w-4xl max-h-[92vh] flex flex-col rounded-3xl bg-white dark:bg-slate-900 shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden">
+              
+              {/* Modal Sticky Header */}
+              <div className="p-5 sm:p-6 border-b border-slate-100 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-800/50 backdrop-blur-md flex flex-col sm:flex-row sm:items-center justify-between gap-4 shrink-0">
+                <div>
+                  <div className="flex items-center gap-2 flex-wrap mb-1">
+                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-brand-50 dark:bg-brand-950 text-brand-700 dark:text-brand-300 border border-brand-200 dark:border-brand-800">
+                      Class {selectedReviewResult.student?.class}
+                    </span>
+                    <span className="text-xs text-slate-500 font-medium">
+                      {selectedReviewResult.exam?.title} ({selectedReviewResult.exam?.subject?.name || 'General'})
+                    </span>
+                  </div>
+                  <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white flex items-center gap-2">
+                    <span>{selectedReviewResult.student?.full_name || 'Student'}</span>
+                    <span className="text-xs font-normal text-slate-400 font-mono">
+                      ({selectedReviewResult.student?.phone || 'No phone'})
+                    </span>
+                  </h2>
+                  <div className="flex items-center gap-3 mt-1.5 text-xs text-slate-600 dark:text-slate-300 flex-wrap">
+                    <span className="font-bold text-slate-900 dark:text-white">
+                      Score: {selectedReviewResult.marks_obtained} / {selectedReviewResult.total_marks} ({selectedReviewResult.percentage}%)
+                    </span>
+                    <span>•</span>
+                    <span className="text-emerald-600 font-semibold">{selectedReviewResult.correct_count} Correct</span>
+                    <span>•</span>
+                    <span className="text-red-500 font-semibold">{selectedReviewResult.incorrect_count} Incorrect</span>
+                    <span>•</span>
+                    <span className="text-slate-400 font-semibold">{selectedReviewResult.unanswered_count} Unanswered</span>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 self-end sm:self-center">
+                  <Link
+                    to={`/exam/${selectedReviewResult.exam_id}/review/${selectedReviewResult.attempt_id}`}
+                    target="_blank"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 shadow-sm"
+                    title="Open in standalone page / Print"
+                  >
+                    <ExternalLink className="h-3.5 w-3.5 text-brand-600" />
+                    <span>Open Full Page</span>
+                  </Link>
+
+                  <button
+                    type="button"
+                    onClick={handleCloseReview}
+                    className="rounded-full p-2 text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors"
+                  >
+                    <X className="h-5 w-5" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Review Filter Bar */}
+              <div className="px-6 py-2.5 bg-slate-100/50 dark:bg-slate-800/30 border-b border-slate-100 dark:border-slate-800 flex items-center gap-2 overflow-x-auto shrink-0">
+                <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mr-1">Filter:</span>
+                <button
+                  type="button"
+                  onClick={() => setReviewFilter('all')}
+                  className={`px-3 py-1 rounded-xl text-xs font-bold transition-all ${
+                    reviewFilter === 'all'
+                      ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900'
+                      : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-50'
+                  }`}
+                >
+                  All Questions ({reviewQuestions.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setReviewFilter('incorrect')}
+                  className={`px-3 py-1 rounded-xl text-xs font-bold transition-all ${
+                    reviewFilter === 'incorrect'
+                      ? 'bg-red-600 text-white'
+                      : 'bg-red-50 text-red-700 dark:bg-red-950/60 dark:text-red-300 border border-red-200 dark:border-red-900 hover:bg-red-100'
+                  }`}
+                >
+                  ❌ Incorrect Only ({selectedReviewResult.incorrect_count})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setReviewFilter('correct')}
+                  className={`px-3 py-1 rounded-xl text-xs font-bold transition-all ${
+                    reviewFilter === 'correct'
+                      ? 'bg-emerald-600 text-white'
+                      : 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-900 hover:bg-emerald-100'
+                  }`}
+                >
+                  ✅ Correct Only ({selectedReviewResult.correct_count})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setReviewFilter('unanswered')}
+                  className={`px-3 py-1 rounded-xl text-xs font-bold transition-all ${
+                    reviewFilter === 'unanswered'
+                      ? 'bg-slate-600 text-white'
+                      : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-200'
+                  }`}
+                >
+                  ❓ Unanswered Only ({selectedReviewResult.unanswered_count})
+                </button>
+              </div>
+
+              {/* Scrollable Questions Body */}
+              <div className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-6">
+                {loadingReview ? (
+                  <div className="py-16 text-center">
+                    <Loader2 className="mx-auto h-8 w-8 animate-spin text-brand-600 mb-2" />
+                    <p className="text-xs text-slate-500">Loading student's marked answer sheet...</p>
+                  </div>
+                ) : filteredReviewQuestions.length === 0 ? (
+                  <div className="py-12 text-center text-slate-500 text-xs">
+                    No questions matching the selected filter ({reviewFilter}).
+                  </div>
+                ) : (
+                  filteredReviewQuestions.map((q, idx) => {
+                    const selected = q.selected_option_ids || [];
+                    const correct = q.correct_option_ids || [];
+                    const isAnswered = q.is_answered;
+                    const isCorrect = isAnswered &&
+                      selected.length === correct.length &&
+                      selected.every((id) => correct.includes(id));
+
+                    return (
+                      <div
+                        key={q.question_id}
+                        className={`rounded-3xl border p-5 sm:p-6 shadow-sm transition-all ${
+                          !isAnswered
+                            ? 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900'
+                            : isCorrect
+                            ? 'border-emerald-300 dark:border-emerald-800/80 bg-emerald-50/20 dark:bg-emerald-950/20'
+                            : 'border-red-300 dark:border-red-800/80 bg-red-50/20 dark:bg-red-950/20'
+                        }`}
+                      >
+                        {/* Question Meta Header */}
+                        <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3 mb-4">
+                          <div className="flex items-center gap-2">
+                            <span className="flex h-7 w-7 items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800 text-xs font-bold text-slate-700 dark:text-slate-300">
+                              {idx + 1}
+                            </span>
+                            <span className="text-xs font-bold text-slate-600 dark:text-slate-400">
+                              Question {idx + 1}
+                            </span>
+                          </div>
+
+                          <div className="flex items-center gap-2">
+                            {!isAnswered ? (
+                              <span className="flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400 border border-slate-200 dark:border-slate-700">
+                                <HelpCircle className="h-3.5 w-3.5" /> Skipped / Unanswered
+                              </span>
+                            ) : isCorrect ? (
+                              <span className="flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-800">
+                                <CheckCircle2 className="h-3.5 w-3.5" /> Correct (+{q.marks} Mark)
+                              </span>
+                            ) : (
+                              <span className="flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-400 border border-red-300 dark:border-red-800">
+                                <XCircle className="h-3.5 w-3.5" /> Student Answered Wrong {q.negative_marks > 0 && `(-${q.negative_marks})`}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Question Text */}
+                        <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white leading-relaxed mb-3">
+                          {q.question_text}
+                        </h3>
+
+                        {/* Question Diagram Image */}
+                        {q.image_url && (
+                          <div className="mb-4 inline-block w-full rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 p-2">
+                            <img
+                              src={q.image_url}
+                              alt="Question Diagram"
+                              className="mx-auto max-h-60 w-auto max-w-full rounded-xl object-contain"
+                            />
+                          </div>
+                        )}
+
+                        {/* Options List */}
+                        <div className="space-y-2 mb-4">
+                          {q.options && q.options.map((opt, optIdx) => {
+                            const isStudentMarked = selected.includes(opt.id);
+                            const isCorrectAnswer = correct.includes(opt.id);
+                            const label = String.fromCharCode(65 + optIdx);
+
+                            let optStyle = 'border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40 text-slate-700 dark:text-slate-300';
+                            if (isCorrectAnswer) {
+                              optStyle = 'border-emerald-500 bg-emerald-50/80 dark:bg-emerald-950/60 text-emerald-950 dark:text-emerald-100 font-semibold ring-1 ring-emerald-500';
+                            } else if (isStudentMarked && !isCorrectAnswer) {
+                              optStyle = 'border-red-400 bg-red-50/80 dark:bg-red-950/60 text-red-950 dark:text-red-100 font-medium ring-1 ring-red-400';
+                            }
+
+                            return (
+                              <div
+                                key={opt.id}
+                                className={`flex items-start gap-3 p-3.5 rounded-2xl border-2 text-xs sm:text-sm ${optStyle}`}
+                              >
+                                <span className="font-bold shrink-0">{label}.</span>
+                                <div className="flex-1 min-w-0 space-y-1.5">
+                                  {opt.text && <span className="block">{opt.text}</span>}
+                                  {opt.image_url && (
+                                    <img
+                                      src={opt.image_url}
+                                      alt={`Option ${label}`}
+                                      className="max-h-32 w-auto max-w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 p-1 object-contain"
+                                    />
+                                  )}
+                                </div>
+
+                                {/* Option Badges */}
+                                {isStudentMarked && isCorrectAnswer && (
+                                  <span className="shrink-0 text-emerald-700 dark:text-emerald-300 font-bold flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-md bg-emerald-100 dark:bg-emerald-900 border border-emerald-300">
+                                    <CheckCircle2 className="h-3.5 w-3.5" /> Marked by Student (Correct)
+                                  </span>
+                                )}
+                                {isStudentMarked && !isCorrectAnswer && (
+                                  <span className="shrink-0 text-red-700 dark:text-red-300 font-bold flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-md bg-red-100 dark:bg-red-900 border border-red-300">
+                                    <XCircle className="h-3.5 w-3.5" /> Marked by Student (Wrong)
+                                  </span>
+                                )}
+                                {!isStudentMarked && isCorrectAnswer && (
+                                  <span className="shrink-0 text-emerald-700 dark:text-emerald-400 font-bold flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950/80 border border-emerald-300/60">
+                                    <CheckCircle2 className="h-3.5 w-3.5" /> Correct Answer
+                                  </span>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+
+                        {/* Teacher Solution / Explanation */}
+                        {q.explanation && (
+                          <div className="rounded-2xl border border-blue-200 dark:border-blue-900 bg-blue-50/50 dark:bg-blue-950/30 p-3.5 text-xs text-blue-900 dark:text-blue-200">
+                            <div className="flex items-center gap-1.5 font-bold mb-1 text-blue-700 dark:text-blue-300">
+                              <Lightbulb className="h-4 w-4 text-amber-500" />
+                              <span>Academic Explanation:</span>
+                            </div>
+                            <p className="leading-relaxed pl-5">
+                              {q.explanation}
+                            </p>
+                          </div>
+                        )}
+
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+
+              {/* Modal Sticky Footer */}
+              <div className="p-4 bg-slate-50 dark:bg-slate-800/80 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-4 shrink-0">
+                <span className="text-xs text-slate-500">
+                  Showing {filteredReviewQuestions.length} of {reviewQuestions.length} questions
+                </span>
+                <button
+                  type="button"
+                  onClick={handleCloseReview}
+                  className="px-5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white dark:bg-white dark:text-slate-900 dark:hover:bg-slate-100 text-xs font-bold transition-all shadow-sm"
+                >
+                  Close Review
+                </button>
+              </div>
+
             </div>
           </div>
         )}

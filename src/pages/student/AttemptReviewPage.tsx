@@ -12,10 +12,12 @@ import {
 import { supabase } from '../../lib/supabase';
 import { seededShuffle } from '../../utils/shuffle';
 import { LoadingSpinner } from '../../components/common/LoadingSpinner';
+import { useAuth } from '../../context/AuthContext';
 import type { ReviewQuestionItem, Exam } from '../../types/database';
 
 export const AttemptReviewPage: React.FC = () => {
   const { examId, attemptId } = useParams<{ examId: string; attemptId: string }>();
+  const { isAdmin } = useAuth();
   const [questions, setQuestions] = useState<ReviewQuestionItem[]>([]);
   const [exam, setExam] = useState<Exam | null>(null);
   const [loading, setLoading] = useState(true);
@@ -87,11 +89,11 @@ export const AttemptReviewPage: React.FC = () => {
       {/* Top Header */}
       <div className="flex items-center justify-between gap-4 mb-6">
         <Link
-          to={`/exam/${examId}/result/${attemptId}`}
+          to={isAdmin ? '/admin/results' : `/exam/${examId}/result/${attemptId}`}
           className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
         >
           <ArrowLeft className="h-4 w-4" />
-          <span>Back to Scorecard</span>
+          <span>{isAdmin ? 'Back to Admin Results' : 'Back to Scorecard'}</span>
         </Link>
         <span className="text-xs font-bold text-brand-600 dark:text-brand-400">
           Answer Key & Explanations
@@ -241,10 +243,10 @@ export const AttemptReviewPage: React.FC = () => {
 
       <div className="mt-8 text-center">
         <Link
-          to="/dashboard"
+          to={isAdmin ? '/admin/results' : '/dashboard'}
           className="inline-flex items-center gap-2 rounded-2xl bg-brand-600 px-6 py-3 text-xs font-bold text-white shadow-sm hover:bg-brand-700"
         >
-          <span>Return to Dashboard</span>
+          <span>{isAdmin ? 'Back to Admin Results' : 'Return to Dashboard'}</span>
         </Link>
       </div>
 

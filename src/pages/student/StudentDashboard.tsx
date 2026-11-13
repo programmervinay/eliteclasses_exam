@@ -17,7 +17,9 @@ import {
   Bell,
   Zap,
   Trophy,
-  Edit3
+  Edit3,
+  Flame,
+  Sparkles
 } from 'lucide-react';
 import { supabase, APP_CONFIG } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
@@ -35,7 +37,7 @@ export const StudentDashboard: React.FC = () => {
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [selectedSubject, setSelectedSubject] = useState<string>('all');
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'available' | 'completed' | 'all'>('available');
+  const [activeTab, setActiveTab] = useState<'available' | 'daily_bites' | 'major_exams' | 'completed' | 'all'>('available');
   const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
 
   const studentClass = profile?.class || '10th';
@@ -127,6 +129,10 @@ export const StudentDashboard: React.FC = () => {
     return count < allowed;
   });
 
+  // Dedicated partitioning for Daily Bites vs Major Exams
+  const dailyBiteExams = availableExams.filter((e) => e.is_daily_bite || e.exam_type === 'daily_bite');
+  const majorExams = availableExams.filter((e) => !e.is_daily_bite && e.exam_type !== 'daily_bite');
+
   const userCompletedResults = results.filter((res) => {
     if (selectedSubject !== 'all' && res.exam?.subject_id !== selectedSubject) {
       return false;
@@ -154,6 +160,108 @@ export const StudentDashboard: React.FC = () => {
       `_Powered by Vinay Prajapati_`;
 
     return `https://wa.me/91${APP_CONFIG.adminWhatsApp}?text=${encodeURIComponent(message)}`;
+  };
+
+  const renderExamCard = (exam: Exam) => {
+    const attemptsDone = submittedCountPerExam[exam.id] || 0;
+    const isReattempt = attemptsDone > 0;
+    const isDailyBite = exam.is_daily_bite || exam.exam_type === 'daily_bite';
+
+    return (
+      <div
+        key={exam.id}
+        className={`rounded-3xl border bg-white dark:bg-slate-900 p-6 flex flex-col justify-between shadow-sm hover:shadow-md transition-all relative overflow-hidden ${
+          isDailyBite
+            ? 'border-amber-300 dark:border-amber-700/60 hover:border-amber-400 dark:hover:border-amber-500 shadow-amber-500/5'
+            : 'border-slate-200/80 dark:border-slate-800 hover:border-brand-300 dark:hover:border-brand-700'
+        }`}
+      >
+        {isDailyBite && (
+          <div className="absolute top-0 right-0 bg-gradient-to-l from-amber-500 to-yellow-400 text-slate-950 text-[10px] font-black px-3 py-1 rounded-bl-xl uppercase tracking-wider flex items-center gap-1 shadow-sm">
+            <Zap className="h-3 w-3 fill-slate-950" />
+            <span>Daily Bite</span>
+          </div>
+        )}
+
+        <div>
+          <div className="flex items-center justify-between gap-2 mb-3">
+            <span className={`px-2.5 py-1 rounded-lg text-[11px] font-bold border ${
+              isDailyBite 
+                ? 'bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border-amber-200/60 dark:border-amber-800/60'
+                : 'bg-brand-50 dark:bg-brand-950/60 text-brand-600 dark:text-brand-400 border-brand-200/50'
+            }`}>
+              {exam.subject?.name || 'General'}
+            </span>
+            {isReattempt ? (
+              <span className="text-[10px] font-extrabold text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-950 px-2.5 py-0.5 rounded-full border border-indigo-200 dark:border-indigo-800">
+                Reattempt ({attemptsDone}/{exam.max_attempts >= 100 ? '∞' : exam.max_attempts})
+              </span>
+            ) : (
+              <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${
+                isDailyBite 
+                  ? 'text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/60'
+                  : 'text-emerald-600 bg-emerald-50 dark:bg-emerald-950'
+              }`}>
+                {exam.max_attempts === 1 ? '1 Attempt Only' : 'Reattempts Allowed'}
+              </span>
+            )}
+          </div>
+
+          <h3 className="text-base font-bold text-slate-900 dark:text-white line-clamp-2">
+            {exam.title}
+          </h3>
+
+          {exam.topic && (
+            <p className="text-xs text-slate-500 mt-1">Topic: {exam.topic}</p>
+          )}
+
+          <p className="text-xs text-slate-600 dark:text-slate-400 mt-2 line-clamp-2 leading-relaxed">
+            {exam.description || (isDailyBite ? '⚡ Fast daily practice bite to refresh key concepts and gain XP.' : 'Comprehensive test evaluating subject comprehension.')}
+          </p>
+
+          <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 grid grid-cols-2 gap-2 text-xs text-slate-500">
+            <div className="flex items-center gap-1.5">
+              <Clock className="h-3.5 w-3.5 text-slate-400" />
+              <span>
+                {exam.timer_mode === 'question'
+                  ? `${exam.duration_seconds < 60 ? `${exam.duration_seconds}s` : `${Math.round(exam.duration_seconds / 60)}m`} / Q`
+                  : exam.timer_mode === 'none'
+                  ? 'No Limit'
+                  : `${Math.round(exam.duration_seconds / 60)} Mins`}
+              </span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <Award className="h-3.5 w-3.5 text-slate-400" />
+              <span>{exam.total_marks} Marks</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-6">
+          <Link
+            to={`/exam/${exam.id}/instructions`}
+            className={`w-full inline-flex items-center justify-center gap-2 rounded-xl py-2.5 text-xs font-bold text-white shadow-sm transition-all ${
+              isReattempt
+                ? 'bg-indigo-600 hover:bg-indigo-700'
+                : isDailyBite
+                ? 'bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-slate-950 shadow-amber-500/20'
+                : 'bg-brand-600 hover:bg-brand-700'
+            }`}
+          >
+            {isReattempt && <RotateCcw className="h-3.5 w-3.5" />}
+            {isDailyBite && !isReattempt && <Zap className="h-3.5 w-3.5 fill-slate-950" />}
+            <span>
+              {isReattempt 
+                ? `Reattempt Quiz (Attempt ${attemptsDone + 1})` 
+                : isDailyBite 
+                ? 'Take Daily Bite' 
+                : 'Start Examination'}
+            </span>
+            <ArrowRight className="h-3.5 w-3.5" />
+          </Link>
+        </div>
+      </div>
+    );
   };
 
   return (
@@ -312,7 +420,30 @@ export const StudentDashboard: React.FC = () => {
                 : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
             }`}
           >
-            Available Tests ({availableExams.length})
+            All Available ({availableExams.length})
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('daily_bites')}
+            className={`flex-1 sm:flex-none inline-flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-xl text-[11px] sm:text-xs font-bold transition-all whitespace-nowrap ${
+              activeTab === 'daily_bites'
+                ? 'bg-amber-500 text-slate-950 shadow-sm shadow-amber-500/20'
+                : 'text-amber-600 dark:text-amber-400 hover:text-amber-700'
+            }`}
+          >
+            <Zap className="h-3.5 w-3.5 fill-current" />
+            <span>Daily Bites ({dailyBiteExams.length})</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('major_exams')}
+            className={`flex-1 sm:flex-none px-3 sm:px-4 py-2 rounded-xl text-[11px] sm:text-xs font-bold transition-all whitespace-nowrap ${
+              activeTab === 'major_exams'
+                ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-sm'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+            }`}
+          >
+            📚 Major Exams ({majorExams.length})
           </button>
           <button
             type="button"
@@ -356,7 +487,7 @@ export const StudentDashboard: React.FC = () => {
 
       {/* Main Content Area */}
       {activeTab === 'available' && (
-        <div>
+        <div className="space-y-10">
           {availableExams.length === 0 ? (
             <div className="rounded-3xl border border-dashed border-slate-200 dark:border-slate-800 p-12 text-center bg-white dark:bg-slate-900">
               <CheckCircle className="mx-auto h-12 w-12 text-emerald-500 mb-3" />
@@ -364,83 +495,112 @@ export const StudentDashboard: React.FC = () => {
                 All Caught Up!
               </h3>
               <p className="mt-1 text-xs text-slate-500 max-w-sm mx-auto">
-                No pending examinations for Class {studentClass} right now. Check back soon for upcoming tests.
+                No pending examinations or daily bites for Class {studentClass} right now. Check back soon for upcoming tests.
+              </p>
+            </div>
+          ) : (
+            <>
+              {/* Daily Bites Section (If any available) */}
+              {dailyBiteExams.length > 0 && (
+                <div>
+                  <div className="flex items-center justify-between gap-4 mb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30 shrink-0">
+                        <Zap className="h-5 w-5 fill-amber-500" />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <h2 className="text-base sm:text-lg font-black text-slate-900 dark:text-white">
+                            Daily Bites ⚡
+                          </h2>
+                          <span className="text-[10px] sm:text-[11px] px-2.5 py-0.5 rounded-full bg-amber-500/15 text-amber-700 dark:text-amber-300 font-extrabold border border-amber-500/30">
+                            Daily Short Quizzes ({dailyBiteExams.length})
+                          </span>
+                        </div>
+                        <p className="text-xs text-slate-500 dark:text-slate-400">
+                          Quick 5-10 minute practice quizzes to sharpen concepts, score quick marks, and boost XP streak!
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {dailyBiteExams.map(renderExamCard)}
+                  </div>
+                </div>
+              )}
+
+              {/* Major Examinations Section (If any available) */}
+              {majorExams.length > 0 && (
+                <div>
+                  <div className="flex items-center justify-between gap-4 mb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 border border-indigo-500/30 shrink-0">
+                        <BookOpen className="h-5 w-5" />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <h2 className="text-base sm:text-lg font-black text-slate-900 dark:text-white">
+                            Major Examinations 📚
+                          </h2>
+                          <span className="text-[10px] sm:text-[11px] px-2.5 py-0.5 rounded-full bg-indigo-500/15 text-indigo-700 dark:text-indigo-300 font-extrabold border border-indigo-500/30">
+                            Full Tests ({majorExams.length})
+                          </span>
+                        </div>
+                        <p className="text-xs text-slate-500 dark:text-slate-400">
+                          Comprehensive assessments, chapter tests, and scheduled term examinations.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {majorExams.map(renderExamCard)}
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      )}
+
+      {/* Dedicated Daily Bites Tab */}
+      {activeTab === 'daily_bites' && (
+        <div>
+          {dailyBiteExams.length === 0 ? (
+            <div className="rounded-3xl border border-dashed border-amber-300/60 dark:border-amber-800/60 p-12 text-center bg-white dark:bg-slate-900">
+              <Zap className="mx-auto h-12 w-12 text-amber-500 mb-3" />
+              <h3 className="text-base font-bold text-slate-900 dark:text-white">
+                No Daily Bites Right Now
+              </h3>
+              <p className="mt-1 text-xs text-slate-500 max-w-sm mx-auto">
+                All daily bites completed or none scheduled for today. Check back tomorrow morning for new quick quizzes!
               </p>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {availableExams.map((exam) => {
-                const attemptsDone = submittedCountPerExam[exam.id] || 0;
-                const isReattempt = attemptsDone > 0;
+              {dailyBiteExams.map(renderExamCard)}
+            </div>
+          )}
+        </div>
+      )}
 
-                return (
-                  <div
-                    key={exam.id}
-                    className="rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 flex flex-col justify-between shadow-sm hover:shadow-md hover:border-brand-300 dark:hover:border-brand-700 transition-all"
-                  >
-                    <div>
-                      <div className="flex items-center justify-between gap-2 mb-3">
-                        <span className="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-brand-50 dark:bg-brand-950/60 text-brand-600 dark:text-brand-400 border border-brand-200/50">
-                          {exam.subject?.name || 'General'}
-                        </span>
-                        {isReattempt ? (
-                          <span className="text-[10px] font-extrabold text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-950 px-2.5 py-0.5 rounded-full border border-indigo-200 dark:border-indigo-800">
-                            Reattempt ({attemptsDone}/{exam.max_attempts >= 100 ? '∞' : exam.max_attempts})
-                          </span>
-                        ) : (
-                          <span className="text-[11px] font-semibold text-emerald-600 bg-emerald-50 dark:bg-emerald-950 px-2 py-0.5 rounded-full">
-                            {exam.max_attempts === 1 ? '1 Attempt Only' : 'Reattempts Allowed'}
-                          </span>
-                        )}
-                      </div>
-
-                      <h3 className="text-base font-bold text-slate-900 dark:text-white line-clamp-2">
-                        {exam.title}
-                      </h3>
-
-                      {exam.topic && (
-                        <p className="text-xs text-slate-500 mt-1">Topic: {exam.topic}</p>
-                      )}
-
-                      <p className="text-xs text-slate-600 dark:text-slate-400 mt-2 line-clamp-2 leading-relaxed">
-                        {exam.description || 'Comprehensive test evaluating subject comprehension.'}
-                      </p>
-
-                      <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 grid grid-cols-2 gap-2 text-xs text-slate-500">
-                        <div className="flex items-center gap-1.5">
-                          <Clock className="h-3.5 w-3.5 text-slate-400" />
-                          <span>
-                            {exam.timer_mode === 'question'
-                              ? `${exam.duration_seconds < 60 ? `${exam.duration_seconds}s` : `${Math.round(exam.duration_seconds / 60)}m`} / Q`
-                              : exam.timer_mode === 'none'
-                              ? 'No Limit'
-                              : `${Math.round(exam.duration_seconds / 60)} Mins`}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-1.5">
-                          <Award className="h-3.5 w-3.5 text-slate-400" />
-                          <span>{exam.total_marks} Marks</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="mt-6">
-                      <Link
-                        to={`/exam/${exam.id}/instructions`}
-                        className={`w-full inline-flex items-center justify-center gap-2 rounded-xl py-2.5 text-xs font-bold text-white shadow-sm transition-all ${
-                          isReattempt
-                            ? 'bg-indigo-600 hover:bg-indigo-700'
-                            : 'bg-brand-600 hover:bg-brand-700'
-                        }`}
-                      >
-                        {isReattempt && <RotateCcw className="h-3.5 w-3.5" />}
-                        <span>{isReattempt ? `Reattempt Quiz (Attempt ${attemptsDone + 1})` : 'Start Examination'}</span>
-                        <ArrowRight className="h-3.5 w-3.5" />
-                      </Link>
-                    </div>
-                  </div>
-                );
-              })}
+      {/* Dedicated Major Exams Tab */}
+      {activeTab === 'major_exams' && (
+        <div>
+          {majorExams.length === 0 ? (
+            <div className="rounded-3xl border border-dashed border-slate-200 dark:border-slate-800 p-12 text-center bg-white dark:bg-slate-900">
+              <BookOpen className="mx-auto h-12 w-12 text-slate-400 mb-3" />
+              <h3 className="text-base font-bold text-slate-900 dark:text-white">
+                No Major Examinations Available
+              </h3>
+              <p className="mt-1 text-xs text-slate-500 max-w-sm mx-auto">
+                No comprehensive examinations pending for Class {studentClass}. Check the Daily Bites section for quick tests!
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {majorExams.map(renderExamCard)}
             </div>
           )}
         </div>

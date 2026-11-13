@@ -12,7 +12,8 @@ import {
   Bell,
   ShieldCheck,
   RotateCcw,
-  Sparkles
+  Sparkles,
+  Zap
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { AdminSidebar } from '../../components/admin/AdminSidebar';
@@ -26,6 +27,7 @@ export const AdminExamsPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [selectedClass, setSelectedClass] = useState<string>('all');
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
+  const [selectedType, setSelectedType] = useState<string>('all');
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [examToEdit, setExamToEdit] = useState<Exam | null>(null);
@@ -101,6 +103,8 @@ export const AdminExamsPage: React.FC = () => {
   const filteredExams = exams.filter((e) => {
     if (selectedClass !== 'all' && e.class !== selectedClass) return false;
     if (selectedStatus !== 'all' && e.status !== selectedStatus) return false;
+    if (selectedType === 'daily_bite' && !(e.is_daily_bite || e.exam_type === 'daily_bite')) return false;
+    if (selectedType === 'standard' && (e.is_daily_bite || e.exam_type === 'daily_bite')) return false;
     return true;
   });
 
@@ -181,6 +185,16 @@ export const AdminExamsPage: React.FC = () => {
             <option value="completed">Completed</option>
           </select>
 
+          <select
+            value={selectedType}
+            onChange={(e) => setSelectedType(e.target.value)}
+            className="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-300"
+          >
+            <option value="all">All Formats (Full & Daily)</option>
+            <option value="daily_bite">⚡ Daily Bites Only</option>
+            <option value="standard">📚 Major Exams Only</option>
+          </select>
+
           <span className="text-xs text-slate-400 ml-auto">
             Showing {filteredExams.length} examinations
           </span>
@@ -221,9 +235,17 @@ export const AdminExamsPage: React.FC = () => {
                     return (
                       <tr key={exam.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30">
                         <td className="p-4">
-                          <span className="font-bold text-slate-900 dark:text-white block">
-                            {exam.title}
-                          </span>
+                          <div className="flex items-center gap-2">
+                            <span className="font-bold text-slate-900 dark:text-white block">
+                              {exam.title}
+                            </span>
+                            {(exam.is_daily_bite || exam.exam_type === 'daily_bite') && (
+                              <span className="inline-flex items-center gap-1 text-[10px] font-black uppercase text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/70 border border-amber-300 dark:border-amber-800 px-2 py-0.5 rounded-full shrink-0">
+                                <Zap className="h-3 w-3 fill-amber-500 text-amber-500" />
+                                Daily Bite
+                              </span>
+                            )}
+                          </div>
                           <div className="flex items-center gap-2 mt-0.5">
                             <span className="text-[11px] text-slate-400">
                               {qCount} Questions • Timer: {exam.timer_mode}
