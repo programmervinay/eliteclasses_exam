@@ -113,10 +113,11 @@ export const AdminQuestionsPage: React.FC = () => {
             <button
               onClick={() => setIsBulkModalOpen(true)}
               disabled={!selectedExamId}
-              className="inline-flex items-center gap-1.5 rounded-2xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-4 py-2.5 text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-50 disabled:opacity-40"
+              className="inline-flex items-center gap-2 rounded-2xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-4 py-2.5 text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-50 shadow-sm transition-all disabled:opacity-40"
+              title="Import multiple questions by pasting CSV text or uploading a CSV file"
             >
-              <Upload className="h-4 w-4" />
-              <span>Bulk CSV Import</span>
+              <Upload className="h-4 w-4 text-brand-600 dark:text-brand-400" />
+              <span>Bulk Import (CSV / Paste)</span>
             </button>
 
             <button
@@ -168,7 +169,7 @@ export const AdminQuestionsPage: React.FC = () => {
             <HelpCircle className="mx-auto h-12 w-12 text-slate-400 mb-3" />
             <h3 className="text-base font-bold text-slate-900 dark:text-white">No Questions in this Examination</h3>
             <p className="mt-1 text-xs text-slate-500 max-w-sm mx-auto">
-              Click "Add Question" to create questions manually or "Bulk CSV Import" to upload multiple questions from an Excel/CSV file.
+              Click "Add Question" to create questions manually or "Bulk Import" to directly paste or upload multiple questions from CSV/Excel.
             </p>
           </div>
         ) : (
