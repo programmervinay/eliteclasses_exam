@@ -261,6 +261,9 @@ export const sendClassNotification = async ({
     if (pushRes.ok) {
       const pushJson = await pushRes.json();
       pushStats = { sent: pushJson.sent || 0, total: pushJson.total || 0 };
+    } else {
+      const errText = await pushRes.text();
+      console.warn('Background Web Push dispatch non-200 response:', pushRes.status, errText);
     }
   } catch (pushErr) {
     console.warn('Background Web Push dispatch warning:', pushErr);

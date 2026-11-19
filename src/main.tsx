@@ -10,6 +10,8 @@ if ('serviceWorker' in navigator) {
       .register('/sw.js')
       .then((reg) => {
         console.log('Elite_Classes Service Worker registered:', reg.scope);
+        // Force check for newest service worker update on every page view
+        reg.update().catch(() => {});
       })
       .catch((err) => {
         console.warn('Service Worker registration error:', err);

@@ -1,5 +1,5 @@
 // Vercel Serverless Function: Dispatch Background Web Push to Students
-import webpush from 'web-push';
+import * as webpush from 'web-push';
 import { createClient } from '@supabase/supabase-js';
 
 const supabaseUrl = process.env.VITE_SUPABASE_URL || 'https://thmpfhhqtplgiosjebwx.supabase.co';

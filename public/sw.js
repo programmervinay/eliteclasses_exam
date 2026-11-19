@@ -1,5 +1,5 @@
 // Elite_Classes Service Worker - PWA & Push Notifications
-const CACHE_NAME = 'elite-classes-v2';
+const CACHE_NAME = 'elite-classes-v3';
 const STATIC_ASSETS = [
   '/',
   '/manifest.json',
@@ -41,8 +41,8 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Skip supabase api calls from cache
-  if (event.request.url.includes('supabase.co')) {
+  // Skip supabase and api calls from cache
+  if (event.request.url.includes('supabase.co') || event.request.url.includes('/api/')) {
     return;
   }
 
@@ -93,11 +93,13 @@ self.addEventListener('push', (event) => {
   const title = data.title || 'Elite Classes Announcement';
   const body = data.message || data.body || 'You have a new update from Sir Vinay.';
   const linkUrl = data.link_url || data.url || '/dashboard';
+  const origin = self.location ? self.location.origin : '';
+  const iconUrl = origin ? `${origin}/icons/icon-192x192.png` : '/icons/icon-192x192.png';
 
   const options = {
     body,
-    icon: '/icons/icon-192x192.png',
-    badge: '/icons/icon-192x192.png',
+    icon: iconUrl,
+    badge: iconUrl,
     vibrate: [200, 100, 200, 100, 200],
     tag: data.tag || `elite-notif-${Date.now()}`,
     renotify: true,
@@ -106,7 +108,12 @@ self.addEventListener('push', (event) => {
     },
   };
 
-  event.waitUntil(self.registration.showNotification(title, options));
+  event.waitUntil(
+    self.registration.showNotification(title, options).catch((err) => {
+      console.warn('showNotification failed with rich options, falling back:', err);
+      return self.registration.showNotification(title, { body });
+    })
+  );
 });
 
 // Push notification handling

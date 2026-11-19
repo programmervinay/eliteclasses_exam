@@ -119,7 +119,7 @@ export const NotificationBell: React.FC = () => {
   }, [user, profile, isAdmin]);
 
   const handleEnablePush = async () => {
-    const res = await requestWebPushPermission();
+    const res = await requestWebPushPermission(profile?.class || 'all', user?.id);
     setPushPermission(res);
   };
 
