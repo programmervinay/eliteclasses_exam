@@ -19,10 +19,12 @@ import {
   Trophy,
   Edit3,
   Flame,
-  Sparkles
+  Sparkles,
+  Smartphone
 } from 'lucide-react';
 import { supabase, APP_CONFIG } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
+import { usePWAInstall } from '../../context/PWAInstallContext';
 import { LoadingSpinner } from '../../components/common/LoadingSpinner';
 import { requestWebPushPermission } from '../../services/notificationService';
 import { EditProfileModal } from '../../components/student/EditProfileModal';
@@ -39,6 +41,7 @@ export const StudentDashboard: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'available' | 'daily_bites' | 'major_exams' | 'completed' | 'all'>('available');
   const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
+  const { isInstalled, openInstallModal } = usePWAInstall();
 
   const studentClass = profile?.class || '10th';
 
@@ -285,6 +288,18 @@ export const StudentDashboard: React.FC = () => {
           </div>
 
           <div className="flex flex-wrap items-center gap-2.5">
+            {!isInstalled && (
+              <button
+                type="button"
+                onClick={openInstallModal}
+                className="inline-flex items-center gap-1.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 px-3.5 py-2.5 text-xs font-bold transition-all shadow-md shadow-amber-950/20"
+                title="Install Elite Classes App on your smartphone"
+              >
+                <Smartphone className="h-4 w-4" />
+                <span>Install Mobile App</span>
+              </button>
+            )}
+
             {typeof window !== 'undefined' && 'Notification' in window && Notification.permission !== 'granted' && (
               <button
                 type="button"

@@ -2,9 +2,12 @@ import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
+import { PWAInstallProvider } from './context/PWAInstallContext';
 import { Navbar } from './components/common/Navbar';
 import { Footer } from './components/common/Footer';
 import { ProtectedRoute } from './components/common/ProtectedRoute';
+import { InstallAppModal } from './components/common/InstallAppModal';
+import { InstallAppBanner } from './components/common/InstallAppBanner';
 
 // Public Pages
 import { HomePage } from './pages/HomePage';
@@ -41,6 +44,8 @@ const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
       {!isExamSession && <Navbar />}
       <div className="flex-1 w-full max-w-full overflow-x-hidden">{children}</div>
       {!isExamSession && <Footer />}
+      {!isExamSession && <InstallAppBanner />}
+      <InstallAppModal />
     </div>
   );
 };
@@ -69,10 +74,11 @@ export const App: React.FC = () => {
   return (
     <ThemeProvider>
       <AuthProvider>
-        <Router>
-          <RecoveryRedirectWatcher />
-          <AppLayout>
-            <Routes>
+        <PWAInstallProvider>
+          <Router>
+            <RecoveryRedirectWatcher />
+            <AppLayout>
+              <Routes>
               {/* Public Routes */}
               <Route path="/" element={<HomePage />} />
               <Route path="/login" element={<LoginPage />} />
@@ -209,6 +215,7 @@ export const App: React.FC = () => {
             </Routes>
           </AppLayout>
         </Router>
+        </PWAInstallProvider>
       </AuthProvider>
     </ThemeProvider>
   );

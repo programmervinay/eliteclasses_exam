@@ -14,16 +14,19 @@ import {
   BarChart2, 
   MessageSquare,
   Radio,
-  Trophy
+  Trophy,
+  Smartphone
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
+import { usePWAInstall } from '../../context/PWAInstallContext';
 import { APP_CONFIG } from '../../lib/supabase';
 import { NotificationBell } from './NotificationBell';
 
 export const Navbar: React.FC = () => {
   const { user, profile, isAdmin, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
+  const { isInstalled, openInstallModal } = usePWAInstall();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
@@ -41,8 +44,12 @@ export const Navbar: React.FC = () => {
         
         {/* Brand Logo */}
         <Link to="/" className="flex items-center gap-2.5 sm:gap-3 group shrink-0">
-          <div className="flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-xl bg-gradient-to-tr from-brand-600 to-indigo-600 text-white shadow-md shadow-brand-500/25 group-hover:scale-105 transition-transform">
-            <GraduationCap className="h-5 w-5 sm:h-6 sm:w-6" />
+          <div className="relative flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-xl overflow-hidden shadow-md shadow-brand-500/20 group-hover:scale-105 transition-transform border border-brand-200/50 dark:border-brand-800/50 bg-slate-950 shrink-0">
+            <img
+              src="/icons/icon-192x192.png"
+              alt="Elite Classes Logo"
+              className="h-full w-full object-cover"
+            />
           </div>
           <div className="flex flex-col">
             <span className="text-lg sm:text-xl font-extrabold tracking-tight bg-gradient-to-r from-brand-600 via-indigo-600 to-blue-500 bg-clip-text text-transparent">
@@ -188,6 +195,18 @@ export const Navbar: React.FC = () => {
 
         {/* Right side Actions (Theme toggle + Profile/Login) */}
         <div className="flex items-center gap-1 sm:gap-2.5 shrink-0">
+          {!isInstalled && (
+            <button
+              type="button"
+              onClick={openInstallModal}
+              className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-gradient-to-r from-brand-600 to-indigo-600 hover:from-brand-500 hover:to-indigo-500 text-white font-bold text-xs shadow-sm shadow-brand-500/25 transition-transform hover:scale-105 active:scale-95"
+              title="Install Elite Classes App on your smartphone"
+            >
+              <Smartphone className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Install App</span>
+            </button>
+          )}
+
           <NotificationBell />
 
           <button
@@ -247,6 +266,20 @@ export const Navbar: React.FC = () => {
       {/* Mobile Menu Dropdown */}
       {mobileMenuOpen && (
         <div className="md:hidden border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-4 pt-2 pb-4 space-y-1">
+          {!isInstalled && (
+            <button
+              type="button"
+              onClick={() => {
+                setMobileMenuOpen(false);
+                openInstallModal();
+              }}
+              className="w-full flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-2xl bg-gradient-to-r from-brand-600 via-indigo-600 to-blue-600 text-white font-bold text-xs shadow-md shadow-brand-500/20 mb-3"
+            >
+              <Smartphone className="h-4 w-4" />
+              <span>📱 Install Elite Classes App</span>
+            </button>
+          )}
+
           {user ? (
             <>
               <div className="py-2 border-b border-slate-100 dark:border-slate-800 mb-2">
