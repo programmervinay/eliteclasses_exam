@@ -1,5 +1,5 @@
 // Elite_Classes Service Worker - PWA & Push Notifications
-const CACHE_NAME = 'elite-classes-v1';
+const CACHE_NAME = 'elite-classes-v2';
 const STATIC_ASSETS = [
   '/',
   '/manifest.json',

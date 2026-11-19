@@ -6,8 +6,8 @@
   "id": "/",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#090d16",
-  "theme_color": "#4f46e5",
+  "background_color": "#031633",
+  "theme_color": "#031633",
   "categories": ["education", "exams", "quiz"],
   "icons": [
     {
