@@ -304,7 +304,7 @@ export const StudentDashboard: React.FC = () => {
               <button
                 type="button"
                 onClick={async () => {
-                  await requestWebPushPermission();
+                  await requestWebPushPermission(profile?.class || 'all', user?.id);
                 }}
                 className="inline-flex items-center gap-1.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 px-3.5 py-2.5 text-xs font-bold transition-all shadow-md shadow-amber-950/20"
                 title="Enable browser system push notifications"

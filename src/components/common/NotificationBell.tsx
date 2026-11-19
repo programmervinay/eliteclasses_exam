@@ -18,6 +18,7 @@ import {
   fetchMyNotifications, 
   triggerSystemWebPush, 
   requestWebPushPermission,
+  registerDevicePushSubscription,
   playNotificationChime
 } from '../../services/notificationService';
 import type { SystemNotification } from '../../types/database';
@@ -45,6 +46,10 @@ export const NotificationBell: React.FC = () => {
 
   useEffect(() => {
     loadNotifications();
+
+    if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
+      registerDevicePushSubscription(profile?.class || 'all', user?.id);
+    }
 
     // Close dropdown on outside click
     const handleClickOutside = (e: MouseEvent) => {

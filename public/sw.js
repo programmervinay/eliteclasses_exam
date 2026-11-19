@@ -76,6 +76,39 @@ self.addEventListener('fetch', (event) => {
   );
 });
 
+// Native Background Web Push Event (Triggered even when App is closed)
+self.addEventListener('push', (event) => {
+  let data = {};
+  if (event.data) {
+    try {
+      data = event.data.json();
+    } catch (e) {
+      data = {
+        title: 'Elite Classes Alert',
+        message: event.data.text(),
+      };
+    }
+  }
+
+  const title = data.title || 'Elite Classes Announcement';
+  const body = data.message || data.body || 'You have a new update from Sir Vinay.';
+  const linkUrl = data.link_url || data.url || '/dashboard';
+
+  const options = {
+    body,
+    icon: '/icons/icon-192x192.png',
+    badge: '/icons/icon-192x192.png',
+    vibrate: [200, 100, 200, 100, 200],
+    tag: data.tag || `elite-notif-${Date.now()}`,
+    renotify: true,
+    data: {
+      url: linkUrl,
+    },
+  };
+
+  event.waitUntil(self.registration.showNotification(title, options));
+});
+
 // Push notification handling
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();

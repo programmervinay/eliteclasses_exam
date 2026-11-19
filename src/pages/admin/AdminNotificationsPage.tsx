@@ -105,7 +105,7 @@ export const AdminNotificationsPage: React.FC = () => {
     setStatusMsg(null);
 
     try {
-      await sendClassNotification({
+      const res = await sendClassNotification({
         targetClass,
         title,
         message,
@@ -115,9 +115,13 @@ export const AdminNotificationsPage: React.FC = () => {
 
       playNotificationChime();
       const targetName = targetClass === 'all' ? 'All Classes' : `Class ${targetClass}`;
+      const pushNote = res?.pushStats?.total 
+        ? ` • Real-time background push dispatched to ${res.pushStats.sent}/${res.pushStats.total} devices` 
+        : '';
+
       setStatusMsg({ 
         type: 'success', 
-        text: `System Web Push Notification dispatched successfully to ${targetName} students!` 
+        text: `System notification dispatched to ${targetName} students!${pushNote}` 
       });
 
       // Reload history
@@ -158,7 +162,14 @@ export const AdminNotificationsPage: React.FC = () => {
     }
   };
 
-  const whatsappBroadcastText = `*ELITE_CLASSES - NOTIFICATION*\nPowered by ${APP_CONFIG.creator}\n\n*${title || 'Announcement'}*\n\n${message}\n\n👉 *Login & Attempt here:* ${window.location.origin}${linkUrl || '/dashboard'}`;
+  const targetLabel = targetClass === 'all' ? 'All Classes (6th-10th)' : `Class ${targetClass}`;
+  const whatsappBroadcastText = 
+    `📢 *ELITE_CLASSES — NOTIFICATION*\n` +
+    `_Powered by ${APP_CONFIG.creator}_\n\n` +
+    `🎯 *Target:* ${targetLabel}\n` +
+    `📌 *Subject:* ${title || 'Announcement'}\n\n` +
+    `${message || 'Please check your Elite Classes portal for details.'}\n\n` +
+    `👉 *Login & Attempt here:* ${window.location.origin}${linkUrl || '/dashboard'}`;
 
   const getTypeBadge = (type: string) => {
     switch (type) {
